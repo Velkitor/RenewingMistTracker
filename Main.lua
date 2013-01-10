@@ -190,7 +190,7 @@ function remTracker:OnUpdate(self, elapsed)
  				myData.renewing_mist_targets[ unit_guid ].expirationTime = expirationTime
  				myData.renewing_mist_targets[ unit_guid ].duration = duration
 				if UnitHealthMax("PLAYER") > 0 then
-					myData.renewing_mist_targets[ myData.player.guid ].currentHealthPct = UnitHealth(unit_id) / UnitHealthMax(unit_id) * 100
+					myData.renewing_mist_targets[ unit_guid ].currentHealthPct = UnitHealth(unit_id) / UnitHealthMax(unit_id) * 100
 				end
 				if not myData.players[ unit_guid ] then
 					myData.players[ unit_guid ] = {}
