@@ -1,0 +1,9 @@
+## Interface: 50100
+## Title: Renewing Mist Tracker
+## SavedVariablesPerCharacter: ReMTrackerPos
+## Author: Xpres
+## Version: 1.0
+
+embeds.xml
+
+Main.lua
