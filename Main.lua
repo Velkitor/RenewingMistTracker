@@ -36,12 +36,24 @@ function remTracker:updateStatusBars()
 			local duration = v.expirationTime - GetTime()
 			myData.statusBars[ status_bar_index ].playerName = myData.players[k].name
 			myData.statusBars[ status_bar_index ].value:SetText( myData.players[k].name)
-			myData.statusBars[ status_bar_index ].value2:SetText("(" .. string.format("%4.1f", v.currentHealthPct ) .. "%) " .. string.format("%4.1f", duration) .. "s" )
+			myData.statusBars[ status_bar_index ].value2:SetText(string.format("%4.1f", duration) .. "s" )
+			myData.statusBars[ status_bar_index ].health_pct:SetText( string.format("%4.1f", v.currentHealthPct ) .. "%" )
+			local health_level = ( v.currentHealthPct - 35 )
+			if health_level < 0 then
+				health_level = 0
+			elseif health_level > 65 then
+				health_level = 65
+			end
+			local health_green = health_level / 65.0
+			local health_red = 1 - health_green
+			
+			myData.statusBars[ status_bar_index ].health_pct:SetTextColor(health_red ,  health_green, 0)
 			myData.statusBars[ status_bar_index ]:SetMinMaxValues(0, v.duration)
 			myData.statusBars[ status_bar_index ]:SetValue( duration )
 		else
 			myData.statusBars[ status_bar_index ].value:SetText( "" )
 			myData.statusBars[ status_bar_index ].value2:SetText( "" )
+			myData.statusBars[ status_bar_index ].health_pct:SetText( "" )
 		end
 		-- Increment the status bar index for the next iteration
 		status_bar_index = status_bar_index + 1
@@ -80,6 +92,16 @@ function remTracker:createStatusBars( cnt )
 		bar.value2:SetTextColor(0, 1, 0)
 		-- Initialize the text with an empty string
 		bar.value2:SetText( "" )
+		
+		bar.health_pct = bar:CreateFontString(nil, "OVERLAY")
+		bar.health_pct:SetPoint("RIGHT", bar, "RIGHT", 4, 0)
+		bar.health_pct:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
+		bar.health_pct:SetJustifyH("RIGHT")
+		bar.health_pct:SetShadowOffset(1, -1)
+		bar.health_pct:SetTextColor(1, 0, 0)
+		-- Initialize the text with an empty string
+		bar.health_pct:SetText( "" )
+		
 		-- Hide it so that we don't show empty bars.
 		bar:Hide()
 		-- Save it to our status bars table
@@ -181,7 +203,7 @@ function remTracker:OnUpdate(self, elapsed)
 		end
 	end
 	if members then
-		for i = 1, members - 1, 1 do
+		for i = 1, members, 1 do
 			local unit_id = grp_type .. i
 			local unit_guid = UnitGUID(unit_id)
 			local name, rank, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId, canApplyAura, isBossDebuff, value1, value2, value3 = UnitBuff(unit_id, "Renewing Mist", nil, "PLAYER")
