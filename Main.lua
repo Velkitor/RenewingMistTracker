@@ -35,11 +35,13 @@ function remTracker:updateStatusBars()
 		if myData.players[k] and myData.statusBars[ status_bar_index ] then
 			local duration = v.expirationTime - GetTime()
 			myData.statusBars[ status_bar_index ].playerName = myData.players[k].name
-			myData.statusBars[ status_bar_index ].value:SetText( myData.players[k].name .. " - (" .. string.format("%4.1f", v.currentHealthPct ) .. "%) " .. string.format("%4.1f", duration) .. "s" )
+			myData.statusBars[ status_bar_index ].value:SetText( myData.players[k].name)
+			myData.statusBars[ status_bar_index ].value2:SetText("(" .. string.format("%4.1f", v.currentHealthPct ) .. "%) " .. string.format("%4.1f", duration) .. "s" )
 			myData.statusBars[ status_bar_index ]:SetMinMaxValues(0, v.duration)
 			myData.statusBars[ status_bar_index ]:SetValue( duration )
 		else
 			myData.statusBars[ status_bar_index ].value:SetText( "" )
+			myData.statusBars[ status_bar_index ].value2:SetText( "" )
 		end
 		-- Increment the status bar index for the next iteration
 		status_bar_index = status_bar_index + 1
@@ -48,27 +50,36 @@ end
 
 function remTracker:createStatusBars( cnt )
 	for i = 1, cnt, 1 do
-		local yOffset = #myData.statusBars * 22 + 20
+		local yOffset = #myData.statusBars * 26 + 20
 		-- Create the bar
 		local bar = CreateFrame("StatusBar", nil, myData.uiFrame)
 		bar:SetPoint("TOPLEFT", 3, -3 - yOffset)
 		bar:SetPoint("TOPRIGHT", -3, -3 - yOffset)
-		bar:SetHeight(20)
+		bar:SetHeight(24)
 		bar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
 		bar:GetStatusBarTexture():SetHorizTile(false)
 		bar:GetStatusBarTexture():SetVertTile(false)
 		bar:SetStatusBarColor(0.5, 1, 0.831)
 		bar:EnableMouse(true)
 
-		-- Do we have the player name for this bar?
 		bar.value = bar:CreateFontString(nil, "OVERLAY")
-		bar.value:SetPoint("LEFT", bar, "LEFT", 4, 0)
-		bar.value:SetFont("Fonts\\FRIZQT__.TTF", 16, "OUTLINE")
+		bar.value:SetPoint("TOPLEFT", bar, "TOPLEFT", 4, 0)
+		bar.value:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
 		bar.value:SetJustifyH("LEFT")
 		bar.value:SetShadowOffset(1, -1)
 		bar.value:SetTextColor(0, 1, 0)
 		-- Initialize the text with an empty string
 		bar.value:SetText( "" )
+		
+		-- Do we have the player name for this bar?
+		bar.value2 = bar:CreateFontString(nil, "OVERLAY")
+		bar.value2:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 4, 0)
+		bar.value2:SetFont("Fonts\\FRIZQT__.TTF", 8, "OUTLINE")
+		bar.value2:SetJustifyH("LEFT")
+		bar.value2:SetShadowOffset(1, -1)
+		bar.value2:SetTextColor(0, 1, 0)
+		-- Initialize the text with an empty string
+		bar.value2:SetText( "" )
 		-- Hide it so that we don't show empty bars.
 		bar:Hide()
 		-- Save it to our status bars table
