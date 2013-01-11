@@ -14,9 +14,19 @@ local remTracker = {}
 
 function remTracker:updateStatusBars()
 	local current_rem_targets = 0
+	local ordered_rem_targets = {}
 	-- Count our current targets
 	for k,v in pairs(myData.renewing_mist_targets) do
 		current_rem_targets = current_rem_targets + 1
+		table.insert( ordered_rem_targets, v )
+	end
+	-- Sort the ordered rem targets array
+	table.sort( ordered_rem_targets, function(a,b) return a.remainingTime < b.remainingTime end )
+	-- Color the TFT button
+	if current_rem_targets > 5 then
+		myData.uiFrame.tftTexture:SetVertexColor(1, 1, 0);
+	else
+		myData.uiFrame.tftTexture:SetVertexColor(1, 1, 1);
 	end
 	if #myData.statusBars < current_rem_targets then
 		remTracker:createStatusBars( current_rem_targets - #myData.statusBars)
@@ -31,12 +41,17 @@ function remTracker:updateStatusBars()
 	end
 	-- Add new renewing mist targets
 	local status_bar_index = 1
-	for k,v in pairs(myData.renewing_mist_targets) do
-		if myData.players[k] and myData.statusBars[ status_bar_index ] then
-			local duration = v.expirationTime - GetTime()
-			myData.statusBars[ status_bar_index ].playerName = myData.players[k].name
-			myData.statusBars[ status_bar_index ].value:SetText( myData.players[k].name)
-			myData.statusBars[ status_bar_index ].value2:SetText(string.format("%4.1f", duration) .. "s" )
+	for k,v in ipairs(ordered_rem_targets) do
+		local guid = v.guid
+		if myData.players[guid] and myData.statusBars[ status_bar_index ] then
+			--Set up the unit name on the bar.
+			myData.statusBars[ status_bar_index ].playerName = myData.players[guid].name
+			myData.statusBars[ status_bar_index ].value:SetText( myData.players[guid].name)
+			if myData.players[guid].classColor then
+				myData.statusBars[ status_bar_index ].value:SetTextColor(myData.players[guid].classColor.r, myData.players[guid].classColor.g, myData.players[guid].classColor.b)
+			end
+			myData.statusBars[ status_bar_index ].value2:SetText(string.format("%4.1f", v.remainingTime) .. "s" )
+			--Set the current health percentage
 			myData.statusBars[ status_bar_index ].health_pct:SetText( string.format("%4.1f", v.currentHealthPct ) .. "%" )
 			local health_level = ( v.currentHealthPct - 35 )
 			if health_level < 0 then
@@ -46,10 +61,11 @@ function remTracker:updateStatusBars()
 			end
 			local health_green = health_level / 65.0
 			local health_red = 1 - health_green
-			
 			myData.statusBars[ status_bar_index ].health_pct:SetTextColor(health_red ,  health_green, 0)
+			
+			--Set the progressbar state
 			myData.statusBars[ status_bar_index ]:SetMinMaxValues(0, v.duration)
-			myData.statusBars[ status_bar_index ]:SetValue( duration )
+			myData.statusBars[ status_bar_index ]:SetValue( v.remainingTime )
 		else
 			myData.statusBars[ status_bar_index ].value:SetText( "" )
 			myData.statusBars[ status_bar_index ].value2:SetText( "" )
@@ -127,6 +143,36 @@ function remTracker:createUIFrame()
 	frame:SetScript("OnDragStart", frame.StartMoving)
 	frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
 	
+	-- Create the ReM Indicator texture
+	frame.remTexture = frame:CreateTexture()
+	frame.remTexture:SetPoint("TOPLEFT", frame,"TOPLEFT", 0, 32)
+	frame.remTexture:SetTexture("Interface\\Icons\\ability_monk_renewingmists")
+	frame.remTexture:SetWidth(32)
+	frame.remTexture:SetHeight(32)
+	frame.remTexture:Show()
+	frame.remTexture.spellName = "Renewing Mist"
+	frame.remTexture.bounceTime = 0.75
+	frame.remTexture.bounceHeight = 7
+	frame.remTexture.animationPoint = { "TOPLEFT", frame,"TOPLEFT", 0, 32 }
+	frame.remTexture.animationGrow = true
+	frame.remTexture.animationGrowHeight = 32
+	frame.remTexture.animationTime = 0
+	
+	-- Create the ReM Indicator texture
+	frame.tftTexture = frame:CreateTexture()
+	frame.tftTexture:SetPoint("TOPLEFT", frame,"TOPLEFT", 34, 32)
+	frame.tftTexture:SetTexture("Interface\\Icons\\ability_monk_thunderfocustea")
+	frame.tftTexture:SetWidth(32)
+	frame.tftTexture:SetHeight(32)
+	frame.tftTexture:Show()
+	frame.tftTexture.spellName = "Thunder Focus Tea"
+	frame.tftTexture.bounceTime = 0.75
+	frame.tftTexture.bounceHeight = 7
+	frame.tftTexture.animationPoint = { "TOPLEFT", frame,"TOPLEFT", 34, 32 }
+	frame.tftTexture.animationGrow = true
+	frame.tftTexture.animationGrowHeight = 32
+	frame.tftTexture.animationTime = 0
+	
 	-- Create the title text
 	frame.titleText = frame:CreateFontString(nil, "OVERLAY")
 	frame.titleText:SetPoint("CENTER", frame, "CENTER", 0, 0)
@@ -179,12 +225,56 @@ function remTracker:playerLogin()
 	myData.player.guid = UnitGUID("PLAYER")
 	myData.player.name = UnitName("PLAYER")
 	-- Add ourselves to the database of seen players
-	myData.players[ myData.player.guid ] = {}
-	myData.players[ myData.player.guid ].name = myData.player.name
+	remTracker:CacheUserInfoForUnitID( "PLAYER" )
 	DEFAULT_CHAT_FRAME:AddMessage( "Renewing Mist Tracker LOADED", 0.5, 1, 0.831 )
 end
 
-function remTracker:OnUpdate(self, elapsed)
+--frame.remTexture
+function remTracker:BounceAnimateFrame(frame, elapsed )
+	local start, duration, enable = GetSpellCooldown(frame.spellName)
+	local name, rank, icon, powerCost, isFunnel, powerType, castingTime, minRange, maxRange = GetSpellInfo(frame.spellName)
+	if powerType then
+		local playerPower = UnitPower( "PLAYER", powerType )
+		if playerPower < powerCost then
+			frame:SetDesaturated(true)
+		else
+			frame:SetDesaturated(false)
+		end
+	end
+	-- If we have a duration it is on cooldown.
+	if duration > 0 then
+		local remaining_time = start + duration - GetTime()
+		local pct_done = 1.0 - remaining_time / duration
+		if pct_done <= 0.01 then
+			frame:Hide()
+		else
+			frame:Show()
+			-- We are not doing our normal animation so zero that out
+			frame.animationTime = 0
+			frame:SetPoint(frame.animationPoint[1], frame.animationPoint[2],frame.animationPoint[3], frame.animationPoint[4], frame.animationPoint[5] * pct_done )
+			frame:SetHeight(frame.animationGrowHeight * pct_done)
+			frame:SetTexCoord(0, 1 , 0, pct_done )
+		end
+	else
+		local animation_time = frame.animationTime + elapsed
+		frame.animationTime = animation_time
+		-- Make sure the icon is visable if it is not on cooldown.
+		frame:Show()
+		frame:SetTexCoord(0, 1 , 0, 1 )
+		local animation_step = math.fmod( animation_time, frame.bounceTime )
+		if animation_step < ( frame.bounceTime / 2 ) then
+			animation_step = ( animation_step * 2 ) / frame.bounceTime
+		else
+			-- local a = ( animation_step * 2 )  - frame.bounceTime
+			animation_step = 2  - ( 2 * animation_step  / frame.bounceTime )
+		end
+		frame:SetPoint(frame.animationPoint[1], frame.animationPoint[2],frame.animationPoint[3], frame.animationPoint[4], frame.animationPoint[5]  + ( frame.bounceHeight * animation_step ) )
+	end
+end
+
+function remTracker:OnUpdate(elapsed)
+	remTracker:BounceAnimateFrame(myData.uiFrame.remTexture, elapsed )
+	remTracker:BounceAnimateFrame(myData.uiFrame.tftTexture, elapsed )
 	-- clear out our targets
 	myData.renewing_mist_targets = {}
 	local members = GetNumGroupMembers()
@@ -196,8 +286,10 @@ function remTracker:OnUpdate(self, elapsed)
 	local name, rank, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId, canApplyAura, isBossDebuff, value1, value2, value3 = UnitBuff("PLAYER", "Renewing Mist", nil, "PLAYER")
 	if name then
 		myData.renewing_mist_targets[ myData.player.guid ] = {}
+		myData.renewing_mist_targets[ myData.player.guid ].guid = myData.player.guid
 		myData.renewing_mist_targets[ myData.player.guid ].expirationTime = expirationTime
 		myData.renewing_mist_targets[ myData.player.guid ].duration = duration
+		myData.renewing_mist_targets[ myData.player.guid ].remainingTime = expirationTime - GetTime()
 		if UnitHealthMax("PLAYER") > 0 then
 			myData.renewing_mist_targets[ myData.player.guid ].currentHealthPct = UnitHealth("PLAYER") / UnitHealthMax("PLAYER") * 100
 		end
@@ -209,33 +301,39 @@ function remTracker:OnUpdate(self, elapsed)
 			local name, rank, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId, canApplyAura, isBossDebuff, value1, value2, value3 = UnitBuff(unit_id, "Renewing Mist", nil, "PLAYER")
 			if name then
  				myData.renewing_mist_targets[ unit_guid ] = {}
+				myData.renewing_mist_targets[ unit_guid ].guid = unit_guid
  				myData.renewing_mist_targets[ unit_guid ].expirationTime = expirationTime
  				myData.renewing_mist_targets[ unit_guid ].duration = duration
+				myData.renewing_mist_targets[ unit_guid ].remainingTime = expirationTime - GetTime()
 				if UnitHealthMax("PLAYER") > 0 then
 					myData.renewing_mist_targets[ unit_guid ].currentHealthPct = UnitHealth(unit_id) / UnitHealthMax(unit_id) * 100
 				end
 				if not myData.players[ unit_guid ] then
-					myData.players[ unit_guid ] = {}
-					myData.players[ unit_guid ].name = UnitName(unit_id)
+					remTracker:CacheUserInfoForUnitID( unit_id )
 				end
 			end
 		end
 	end
-	-- count the rem people
-	local cnt = 0
-	for k,v in pairs(myData.renewing_mist_targets) do
-		cnt = cnt + 1
-	end
 	remTracker:updateStatusBars()
 end
 
+function remTracker:CacheUserInfoForUnitID( unit_id )
+	-- If we don't have a unit_id just stop here
+	if not unit_id then
+		return
+	end
+	local unit_guid = UnitGUID(unit_id)
+	local class, className = UnitClass(unit_id)
+	myData.players[ unit_guid ] = {}
+	myData.players[ unit_guid ].name = UnitName(unit_id)
+	myData.players[ unit_guid ].className = className
+	if className then
+		myData.players[ unit_guid ].classColor = RAID_CLASS_COLORS[className]
+	end
+end
 
 function OnEvent(self, event, addon)
 	local localizedClass, englishClass = UnitClass("player");
-	if not englishClass then
-		DEFAULT_CHAT_FRAME:AddMessage( "Renewing Mist Tracker: This character is not a monk, not loading.", 0.5, 1, 0.831 )
-		return
-	end
 	if englishClass ~= "MONK" then
 		DEFAULT_CHAT_FRAME:AddMessage( "Renewing Mist Tracker: This character is not a monk, not loading.", 0.5, 1, 0.831 )
 		return
