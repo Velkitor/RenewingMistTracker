@@ -242,7 +242,7 @@ function remTracker:BounceAnimateFrame(frame, elapsed )
 		end
 	end
 	-- If we have a duration it is on cooldown.
-	if duration > 0 then
+	if duration > 1.0 then
 		local remaining_time = start + duration - GetTime()
 		local pct_done = 1.0 - remaining_time / duration
 		if pct_done <= 0.01 then
@@ -260,6 +260,7 @@ function remTracker:BounceAnimateFrame(frame, elapsed )
 		frame.animationTime = animation_time
 		-- Make sure the icon is visable if it is not on cooldown.
 		frame:Show()
+		frame:SetHeight(frame.animationGrowHeight)
 		frame:SetTexCoord(0, 1 , 0, 1 )
 		local animation_step = math.fmod( animation_time, frame.bounceTime )
 		if animation_step < ( frame.bounceTime / 2 ) then
