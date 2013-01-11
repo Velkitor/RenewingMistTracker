@@ -1,6 +1,7 @@
 local myFrame = CreateFrame("frame")
 myFrame:RegisterEvent("PLAYER_LOGIN")
 myFrame:RegisterEvent("ADDON_LOADED")
+myFrame:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
 
 local myData = {
 	player={},
@@ -224,9 +225,10 @@ function remTracker:playerLogin()
 	myFrame:SetScript("OnUpdate", remTracker.OnUpdate )
 	myData.player.guid = UnitGUID("PLAYER")
 	myData.player.name = UnitName("PLAYER")
+	myData.player.spec = GetSpecialization()
 	-- Add ourselves to the database of seen players
 	remTracker:CacheUserInfoForUnitID( "PLAYER" )
-	DEFAULT_CHAT_FRAME:AddMessage( "Renewing Mist Tracker LOADED", 0.5, 1, 0.831 )
+	DEFAULT_CHAT_FRAME:AddMessage( "Renewing Mist Tracker Loaded", 0.5, 1, 0.831 )
 end
 
 --frame.remTexture
@@ -274,6 +276,13 @@ function remTracker:BounceAnimateFrame(frame, elapsed )
 end
 
 function remTracker:OnUpdate(elapsed)
+	-- If we are not in healing spec hide the frame and exit this function
+	if not remTracker:IsHealingSpec() then
+			myData.uiFrame:Hide()
+			return
+	else
+		myData.uiFrame:Show()
+	end
 	remTracker:BounceAnimateFrame(myData.uiFrame.remTexture, elapsed )
 	remTracker:BounceAnimateFrame(myData.uiFrame.tftTexture, elapsed )
 	-- clear out our targets
@@ -318,6 +327,10 @@ function remTracker:OnUpdate(elapsed)
 	remTracker:updateStatusBars()
 end
 
+function remTracker:IsHealingSpec()
+	return ( myData.player.spec == 2 )
+end
+
 function remTracker:CacheUserInfoForUnitID( unit_id )
 	-- If we don't have a unit_id just stop here
 	if not unit_id then
@@ -333,16 +346,18 @@ function remTracker:CacheUserInfoForUnitID( unit_id )
 	end
 end
 
-function OnEvent(self, event, addon)
-	local localizedClass, englishClass = UnitClass("player");
-	if englishClass ~= "MONK" then
-		DEFAULT_CHAT_FRAME:AddMessage( "Renewing Mist Tracker: This character is not a monk, not loading.", 0.5, 1, 0.831 )
-		return
-	end
+function OnEvent(self, event, arg1)
   if event == "PLAYER_LOGIN" then
+		local localizedClass, englishClass = UnitClass("player");
+		if englishClass ~= "MONK" then
+			DEFAULT_CHAT_FRAME:AddMessage( "Renewing Mist Tracker: This character is not a monk, not loading.", 0.5, 1, 0.831 )
+			return
+		end
 		remTracker:playerLogin()
 	elseif event == "ADDON_LOADED" then
-
+	elseif event == "ACTIVE_TALENT_GROUP_CHANGED" then
+		-- The spec number is passed to us, but this reads better.
+		myData.player.spec = GetSpecialization()
   end
 end
 
