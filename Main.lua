@@ -200,11 +200,11 @@ function remTracker:createUIFrame()
 		return myData.hasRemTarget == false
 	end
 	frame.upliftTexture.shouldBlink = function()
-			if myData.targets_under_80pct > 2 then
-				return true
-			else
-				return false
-			end
+		if myData.targets_under_80pct > 2 then
+			return true
+		else
+			return false
+		end
 	end
 	
 	
@@ -223,11 +223,7 @@ function remTracker:createUIFrame()
 	frame.dragLock:SetWidth(16)
 	frame.dragLock:SetHeight(16)
 	frame.dragLock:SetBackdropColor(1,1,1,1)
-	-- frame.dragLock:SetBackdrop({
-	--     bgFile   = "Interface\\Tooltips\\UI-Tooltip-Background", tile = true, tileSize = 16,
-	--     edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", edgeSize = 12,
-	--     insets = { left = 3, right = 3, top = 3, bottom = 3, },
-	-- })
+
 	-- Create the texture for the button
 	frame.dragLock.texture = frame.dragLock:CreateTexture()
 	frame.dragLock.texture:SetPoint("CENTER", frame.dragLock,"CENTER", 0, 0)
@@ -265,7 +261,29 @@ function remTracker:playerLogin()
 	DEFAULT_CHAT_FRAME:AddMessage( "Renewing Mist Tracker Loaded", 0.5, 1, 0.831 )
 end
 
---frame.remTexture
+
+function remTracker:AnimateFrame( frame, elapsed )
+	if frame.shouldHide and frame.shouldHide() then
+		frame:Hide()
+		return
+	end
+	remTracker:BlinkFrame( frame, elapsed )
+	remTracker:BounceAnimateFrame(frame, elapsed )
+end
+
+function remTracker:BlinkFrame( frame, elapsed )
+	if frame.shouldBlink and frame.shouldBlink() then
+		local animation_time = frame.blinkAanimationTime or 0
+		animation_time = animation_time + elapsed
+		frame.blinkAanimationTime = animation_time
+		-- Make sure the icon is visable if it is not on cooldown.
+		local animation_step = math.sin( (math.fmod( animation_time, 1.5 ) / 1.5 ) * math.pi )
+	
+		frame:SetVertexColor(1, 1, animation_step);
+	else
+		frame:SetVertexColor(1, 1, 1);
+	end
+end
 function remTracker:BounceAnimateFrame(frame, elapsed )
 	local start, duration, enable = GetSpellCooldown(frame.spellName)
 	local name, rank, icon, powerCost, isFunnel, powerType, castingTime, minRange, maxRange = GetSpellInfo(frame.spellName)
@@ -277,17 +295,9 @@ function remTracker:BounceAnimateFrame(frame, elapsed )
 			frame:SetDesaturated(false)
 		end
 	end
-	if frame.shouldBlink and frame.shouldBlink() then
-		frame:SetVertexColor(1, 1, 0);
-	else
-		frame:SetVertexColor(1, 1, 1);
-	end
-	
+
 	-- If we have a duration it is on cooldown.
-	if frame.shouldHide and frame.shouldHide() then
-		frame:Hide()
-		return
-	elseif duration > 1.0 then
+	if duration > 1.0 then
 		local remaining_time = start + duration - GetTime()
 		local pct_done = 1.0 - remaining_time / duration
 		if pct_done <= 0.01 then
@@ -307,13 +317,8 @@ function remTracker:BounceAnimateFrame(frame, elapsed )
 		frame:Show()
 		frame:SetHeight(frame.animationGrowHeight)
 		frame:SetTexCoord(0, 1 , 0, 1 )
-		local animation_step = math.fmod( animation_time, frame.bounceTime )
-		if animation_step < ( frame.bounceTime / 2 ) then
-			animation_step = ( animation_step * 2 ) / frame.bounceTime
-		else
-			-- local a = ( animation_step * 2 )  - frame.bounceTime
-			animation_step = 2  - ( 2 * animation_step  / frame.bounceTime )
-		end
+		local animation_step = math.sin( (math.fmod( animation_time, frame.bounceTime ) / frame.bounceTime ) * math.pi )
+
 		frame:SetPoint(frame.animationPoint[1], frame.animationPoint[2],frame.animationPoint[3], frame.animationPoint[4], frame.animationPoint[5]  + ( frame.bounceHeight * animation_step ) )
 	end
 end
@@ -372,9 +377,9 @@ function remTracker:OnUpdate(elapsed)
 	end
 	remTracker:updateStatusBars()
 	--Animate our bars after we have collected data.
-	remTracker:BounceAnimateFrame(myData.uiFrame.remTexture, elapsed )
-	remTracker:BounceAnimateFrame(myData.uiFrame.tftTexture, elapsed )
-	remTracker:BounceAnimateFrame(myData.uiFrame.upliftTexture, elapsed )
+	remTracker:AnimateFrame(myData.uiFrame.remTexture, elapsed )
+	remTracker:AnimateFrame(myData.uiFrame.tftTexture, elapsed )
+	remTracker:AnimateFrame(myData.uiFrame.upliftTexture, elapsed )
 end
 
 function remTracker:IsHealingSpec()
@@ -398,8 +403,9 @@ end
 
 function OnEvent(self, event, arg1)
   if event == "PLAYER_LOGIN" then
-		local localizedClass, englishClass = UnitClass("player");
+		local localizedClass, englishClass = UnitClass("player")
 		if englishClass ~= "MONK" then
+			myData.uiFrame:Hide()
 			DEFAULT_CHAT_FRAME:AddMessage( "Renewing Mist Tracker: This character is not a monk, not loading.", 0.5, 1, 0.831 )
 			return
 		end
