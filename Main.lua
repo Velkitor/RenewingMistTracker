@@ -15,20 +15,17 @@ local remTracker = {}
 
 function remTracker:updateStatusBars()
 	local current_rem_targets = 0
+	local targets_under_80pct = 0
 	local ordered_rem_targets = {}
 	-- Count our current targets
 	for k,v in pairs(myData.renewing_mist_targets) do
 		current_rem_targets = current_rem_targets + 1
 		table.insert( ordered_rem_targets, v )
 	end
+	myData.current_rem_targets = current_rem_targets
 	-- Sort the ordered rem targets array
 	table.sort( ordered_rem_targets, function(a,b) return a.remainingTime < b.remainingTime end )
-	-- Color the TFT button
-	if current_rem_targets > 5 then
-		myData.uiFrame.tftTexture:SetVertexColor(1, 1, 0);
-	else
-		myData.uiFrame.tftTexture:SetVertexColor(1, 1, 1);
-	end
+
 	if #myData.statusBars < current_rem_targets then
 		remTracker:createStatusBars( current_rem_targets - #myData.statusBars)
 	end
@@ -54,6 +51,9 @@ function remTracker:updateStatusBars()
 			myData.statusBars[ status_bar_index ].value2:SetText(string.format("%4.1f", v.remainingTime) .. "s" )
 			--Set the current health percentage
 			myData.statusBars[ status_bar_index ].health_pct:SetText( string.format("%4.1f", v.currentHealthPct ) .. "%" )
+			if v.currentHealthPct < 80 then
+				targets_under_80pct = targets_under_80pct + 1
+			end
 			local health_level = ( v.currentHealthPct - 35 )
 			if health_level < 0 then
 				health_level = 0
@@ -75,6 +75,7 @@ function remTracker:updateStatusBars()
 		-- Increment the status bar index for the next iteration
 		status_bar_index = status_bar_index + 1
 	end
+	myData.targets_under_80pct = targets_under_80pct
 end
 
 function remTracker:createStatusBars( cnt )
@@ -173,6 +174,39 @@ function remTracker:createUIFrame()
 	frame.tftTexture.animationGrow = true
 	frame.tftTexture.animationGrowHeight = 32
 	frame.tftTexture.animationTime = 0
+	frame.tftTexture.shouldBlink = function()
+			if myData.current_rem_targets > 5 then
+				return true
+			else
+				return false
+			end
+	end
+	
+	-- Create the ReM Indicator texture
+	frame.upliftTexture = frame:CreateTexture()
+	frame.upliftTexture:SetPoint("TOPLEFT", frame,"TOPLEFT", 68, 32)
+	frame.upliftTexture:SetTexture("Interface\\Icons\\ability_monk_uplift")
+	frame.upliftTexture:SetWidth(32)
+	frame.upliftTexture:SetHeight(32)
+	frame.upliftTexture:Show()
+	frame.upliftTexture.spellName = "Uplift"
+	frame.upliftTexture.bounceTime = 0.75
+	frame.upliftTexture.bounceHeight = 7
+	frame.upliftTexture.animationPoint = { "TOPLEFT", frame,"TOPLEFT", 68, 32 }
+	frame.upliftTexture.animationGrow = true
+	frame.upliftTexture.animationGrowHeight = 32
+	frame.upliftTexture.animationTime = 0
+	frame.upliftTexture.shouldHide = function()
+		return myData.hasRemTarget == false
+	end
+	frame.upliftTexture.shouldBlink = function()
+			if myData.targets_under_80pct > 2 then
+				return true
+			else
+				return false
+			end
+	end
+	
 	
 	-- Create the title text
 	frame.titleText = frame:CreateFontString(nil, "OVERLAY")
@@ -243,8 +277,17 @@ function remTracker:BounceAnimateFrame(frame, elapsed )
 			frame:SetDesaturated(false)
 		end
 	end
+	if frame.shouldBlink and frame.shouldBlink() then
+		frame:SetVertexColor(1, 1, 0);
+	else
+		frame:SetVertexColor(1, 1, 1);
+	end
+	
 	-- If we have a duration it is on cooldown.
-	if duration > 1.0 then
+	if frame.shouldHide and frame.shouldHide() then
+		frame:Hide()
+		return
+	elseif duration > 1.0 then
 		local remaining_time = start + duration - GetTime()
 		local pct_done = 1.0 - remaining_time / duration
 		if pct_done <= 0.01 then
@@ -283,10 +326,11 @@ function remTracker:OnUpdate(elapsed)
 	else
 		myData.uiFrame:Show()
 	end
-	remTracker:BounceAnimateFrame(myData.uiFrame.remTexture, elapsed )
-	remTracker:BounceAnimateFrame(myData.uiFrame.tftTexture, elapsed )
+
 	-- clear out our targets
 	myData.renewing_mist_targets = {}
+	-- It is possible that our Uplift will show 1 frame longer than it should... oh well.
+	myData.hasRemTarget = false
 	local members = GetNumGroupMembers()
 	local grp_type = "party"
 	if IsInRaid() then
@@ -295,6 +339,7 @@ function remTracker:OnUpdate(elapsed)
 	-- Check self
 	local name, rank, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId, canApplyAura, isBossDebuff, value1, value2, value3 = UnitBuff("PLAYER", "Renewing Mist", nil, "PLAYER")
 	if name then
+		myData.hasRemTarget = true
 		myData.renewing_mist_targets[ myData.player.guid ] = {}
 		myData.renewing_mist_targets[ myData.player.guid ].guid = myData.player.guid
 		myData.renewing_mist_targets[ myData.player.guid ].expirationTime = expirationTime
@@ -310,6 +355,7 @@ function remTracker:OnUpdate(elapsed)
 			local unit_guid = UnitGUID(unit_id)
 			local name, rank, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId, canApplyAura, isBossDebuff, value1, value2, value3 = UnitBuff(unit_id, "Renewing Mist", nil, "PLAYER")
 			if name then
+				myData.hasRemTarget = true
  				myData.renewing_mist_targets[ unit_guid ] = {}
 				myData.renewing_mist_targets[ unit_guid ].guid = unit_guid
  				myData.renewing_mist_targets[ unit_guid ].expirationTime = expirationTime
@@ -325,6 +371,10 @@ function remTracker:OnUpdate(elapsed)
 		end
 	end
 	remTracker:updateStatusBars()
+	--Animate our bars after we have collected data.
+	remTracker:BounceAnimateFrame(myData.uiFrame.remTexture, elapsed )
+	remTracker:BounceAnimateFrame(myData.uiFrame.tftTexture, elapsed )
+	remTracker:BounceAnimateFrame(myData.uiFrame.upliftTexture, elapsed )
 end
 
 function remTracker:IsHealingSpec()
