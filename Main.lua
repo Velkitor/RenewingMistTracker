@@ -130,7 +130,7 @@ end
 function remTracker:createUIFrame()
 	local frame = CreateFrame("Frame", "ReMTracker", UIParent)
 	-- Orient our UI Frame
-	frame:SetSize(200, 20)
+	frame:SetSize(204, 20)
 	frame:SetPoint("CENTER", UIParent)
 	frame:SetBackdrop({
 	    bgFile   = "Interface\\Tooltips\\UI-Tooltip-Background", tile = true, tileSize = 16,
@@ -207,6 +207,43 @@ function remTracker:createUIFrame()
 		end
 	end
 	
+	-- Create the ReM Indicator texture
+	frame.manaTeaTexture = frame:CreateTexture()
+	frame.manaTeaTexture:SetPoint("TOPLEFT", frame,"TOPLEFT", 170, 32)
+	frame.manaTeaTexture:SetTexture("Interface\\Icons\\monk_ability_cherrymanatea")
+	frame.manaTeaTexture:SetWidth(32)
+	frame.manaTeaTexture:SetHeight(32)
+	frame.manaTeaTexture:Show()
+	frame.manaTeaTexture.spellName = "Mana Tea"
+	frame.manaTeaTexture.bounceTime = 0.75
+	frame.manaTeaTexture.bounceHeight = 7
+	frame.manaTeaTexture.animationPoint = { "TOPLEFT", frame,"TOPLEFT", 170, 32 }
+	frame.manaTeaTexture.animationGrow = true
+	frame.manaTeaTexture.animationGrowHeight = 32
+	frame.manaTeaTexture.animationTime = 0
+	frame.manaTeaTexture.shouldHide = function()
+		if not myData.player.mana_pct or myData.player.mana_pct > 90 then
+			return true
+		end
+		if not remTracker:HasManaTeaGlyph() then
+			return true
+		end
+		local name, rank, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId, canApplyAura, isBossDebuff, value1, value2, value3 = UnitBuff("PLAYER", "Mana Tea", nil, "PLAYER")
+		if not count then
+			return true
+		end
+		if count > 1 then
+			return false
+		end
+		return true
+	end
+	frame.manaTeaTexture.shouldBlink = function()
+		if not myData.player.mana_pct or myData.player.mana_pct > 50 then
+			return false
+		else
+			return true
+		end
+	end
 	
 	-- Create the title text
 	frame.titleText = frame:CreateFontString(nil, "OVERLAY")
@@ -331,6 +368,16 @@ function remTracker:OnUpdate(elapsed)
 	else
 		myData.uiFrame:Show()
 	end
+	
+	--Update our mana percentage
+	local mana = UnitPower("PLAYER", SPELL_POWER_MANA)
+	local max_mana = UnitPowerMax("Player",SPELL_POWER_MANA)
+	
+	if not max_mana or max_mana < 1 or not mana or mana < 1 then
+		myData.player.mana_pct = 0
+	else
+		myData.player.mana_pct = (mana/max_mana) * 100
+	end
 
 	-- clear out our targets
 	myData.renewing_mist_targets = {}
@@ -380,10 +427,47 @@ function remTracker:OnUpdate(elapsed)
 	remTracker:AnimateFrame(myData.uiFrame.remTexture, elapsed )
 	remTracker:AnimateFrame(myData.uiFrame.tftTexture, elapsed )
 	remTracker:AnimateFrame(myData.uiFrame.upliftTexture, elapsed )
+	remTracker:AnimateFrame(myData.uiFrame.manaTeaTexture, elapsed )
 end
 
 function remTracker:IsHealingSpec()
 	return ( myData.player.spec == 2 )
+end
+
+function remTracker:QueryGlyphs()
+	local glyphs = {}
+	for i = 1, 6, 1 do
+		local glyph_data = {}
+		local enabled, glyphType, glyphTooltipIndex, glyphSpell, icon = GetGlyphSocketInfo(i)
+		glyph_data.enabled = enabled
+		glyph_data.glyph_type = glyphType
+		glyph_data.tooltip_index = glyphTooltipIndex
+		glyph_data.icon = icon
+		glyph_data.spell_id = glyphSpell
+		table.insert( glyphs, glyph_data )
+	end
+	myData.player.glyphs = glyphs
+end
+
+function remTracker:HasGlyph( spell_id )
+	if not myData.player.glyphs then
+		return false
+	end
+	if #myData.player.glyphs < 1 then
+		return false
+	end
+	for k,v in pairs(myData.player.glyphs) do
+		if v.spell_id and v.spell_id == spell_id then
+			return true
+		end
+	end
+	return false
+end
+
+--This will look nice in the code than remTracker:HasGlyph( 123763 ) 
+
+function remTracker:HasManaTeaGlyph()
+	return remTracker:HasGlyph( 123763 )
 end
 
 function remTracker:CacheUserInfoForUnitID( unit_id )
@@ -410,10 +494,12 @@ function OnEvent(self, event, arg1)
 			return
 		end
 		remTracker:playerLogin()
+		remTracker:QueryGlyphs()
 	elseif event == "ADDON_LOADED" then
 	elseif event == "ACTIVE_TALENT_GROUP_CHANGED" then
 		-- The spec number is passed to us, but this reads better.
 		myData.player.spec = GetSpecialization()
+		remTracker:QueryGlyphs()
   end
 end
 
