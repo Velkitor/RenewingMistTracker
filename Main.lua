@@ -2,14 +2,16 @@ local myFrame = CreateFrame("frame")
 myFrame:RegisterEvent("PLAYER_LOGIN")
 myFrame:RegisterEvent("ADDON_LOADED")
 myFrame:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
+myFrame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 
 local myData = {
 	player={},
 	players={},
 	statusBars = {},
-	renewing_mist_targets = {}
+	renewing_mist_targets = {},
+	renewing_mist_heals = {}
 }
-
+local Helpers = {}
 local remTracker = {}
 -- Functions Section
 
@@ -63,6 +65,51 @@ function remTracker:updateStatusBars()
 			local health_green = health_level / 65.0
 			local health_red = 1 - health_green
 			myData.statusBars[ status_bar_index ].health_pct:SetTextColor(health_red ,  health_green, 0)
+			
+			--Display the last heal information
+			if myData.renewing_mist_heals[ guid ] and #myData.renewing_mist_heals[ guid ] > 0 then
+				local heal_info = myData.renewing_mist_heals[ guid ][ #myData.renewing_mist_heals[ guid ] ]
+				-- Basic error checking
+				if not myData.statusBars[ status_bar_index ].heal_amt.player_guid or myData.statusBars[ status_bar_index ].heal_amt.player_guid ~= guid then
+					myData.statusBars[ status_bar_index ].heal_amt.player_guid = guid
+					myData.statusBars[ status_bar_index ].heal_amt.updaed_at = 0
+				end
+				if not myData.statusBars[ status_bar_index ].heal_amt.updaed_at then
+					myData.statusBars[ status_bar_index ].heal_amt.updaed_at = 0
+				end
+				
+				-- Set the text if need, otherwise fade it in
+				if myData.statusBars[ status_bar_index ].heal_amt.updaed_at < heal_info.seen_at then
+					local heal_text = Helpers:ReadableNumber( heal_info.effective, 2)
+					if heal_info.over and heal_info.over > 0 then
+						heal_text = heal_text .. " (" .. Helpers:ReadableNumber( heal_info.over, 2) .. ")"
+					end
+					myData.statusBars[ status_bar_index ].heal_amt:SetText( heal_text )
+					myData.statusBars[ status_bar_index ].heal_amt.updaed_at = GetTime()
+				else
+					local delta = GetTime() - myData.statusBars[ status_bar_index ].heal_amt.updaed_at
+					local alpha = 0
+					--Scale it up for maths reasons!
+					if delta < 0 then
+						-- should never be the case.
+						delta = 0
+					else
+						delta = delta * 20
+					end
+					
+					if delta > 20 then
+						alpha = 0
+					elseif delta > 10 then
+						alpha = 1
+					else
+						alpha = math.pow(delta,4) / 10000
+					end
+					myData.statusBars[ status_bar_index ].heal_amt:SetTextColor(0, 1, 0, alpha)
+				end
+			else
+				myData.statusBars[ status_bar_index ].heal_amt:SetTextColor(0, 1, 0, 0)
+				myData.statusBars[ status_bar_index ].heal_amt:SetText( "" )
+			end
 			
 			--Set the progressbar state
 			myData.statusBars[ status_bar_index ]:SetMinMaxValues(0, v.duration)
@@ -119,6 +166,15 @@ function remTracker:createStatusBars( cnt )
 		bar.health_pct:SetTextColor(1, 0, 0)
 		-- Initialize the text with an empty string
 		bar.health_pct:SetText( "" )
+		
+		bar.heal_amt = bar:CreateFontString(nil, "OVERLAY")
+		bar.heal_amt:SetPoint("BOTTOM", bar, "BOTTOM", 0, 0)
+		bar.heal_amt:SetFont("Fonts\\FRIZQT__.TTF", 12, "OUTLINE")
+		bar.heal_amt:SetJustifyH("CENTER")
+		bar.heal_amt:SetShadowOffset(1, -1)
+		bar.heal_amt:SetTextColor(0, 1, 0, 0)
+		-- Initialize the text with an empty string
+		bar.heal_amt:SetText( "" )
 		
 		-- Hide it so that we don't show empty bars.
 		bar:Hide()
@@ -391,6 +447,9 @@ function remTracker:OnUpdate(elapsed)
 	-- Check self
 	local name, rank, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId, canApplyAura, isBossDebuff, value1, value2, value3 = UnitBuff("PLAYER", "Renewing Mist", nil, "PLAYER")
 	if name then
+		if not myData.renewing_mist_heals[myData.player.guid] then
+			myData.renewing_mist_heals[myData.player.guid] = {}
+		end
 		myData.hasRemTarget = true
 		myData.renewing_mist_targets[ myData.player.guid ] = {}
 		myData.renewing_mist_targets[ myData.player.guid ].guid = myData.player.guid
@@ -400,6 +459,8 @@ function remTracker:OnUpdate(elapsed)
 		if UnitHealthMax("PLAYER") > 0 then
 			myData.renewing_mist_targets[ myData.player.guid ].currentHealthPct = UnitHealth("PLAYER") / UnitHealthMax("PLAYER") * 100
 		end
+	else
+		myData.renewing_mist_heals[myData.player.guid] = {}
 	end
 	if members then
 		for i = 1, members, 1 do
@@ -407,6 +468,9 @@ function remTracker:OnUpdate(elapsed)
 			local unit_guid = UnitGUID(unit_id)
 			local name, rank, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId, canApplyAura, isBossDebuff, value1, value2, value3 = UnitBuff(unit_id, "Renewing Mist", nil, "PLAYER")
 			if name then
+				if not myData.renewing_mist_heals[ unit_guid ] then
+					myData.renewing_mist_heals[ unit_guid ] = {}
+				end
 				myData.hasRemTarget = true
  				myData.renewing_mist_targets[ unit_guid ] = {}
 				myData.renewing_mist_targets[ unit_guid ].guid = unit_guid
@@ -419,6 +483,8 @@ function remTracker:OnUpdate(elapsed)
 				if not myData.players[ unit_guid ] then
 					remTracker:CacheUserInfoForUnitID( unit_id )
 				end
+			else
+				myData.renewing_mist_heals[ unit_guid ] = {}
 			end
 		end
 	end
@@ -485,8 +551,34 @@ function remTracker:CacheUserInfoForUnitID( unit_id )
 	end
 end
 
-function OnEvent(self, event, arg1)
-  if event == "PLAYER_LOGIN" then
+function remTracker:CombatLogEvent(...)
+	local params = {...}
+	-- If it is not from us, ignore it.
+	if params[4] ~= myData.player.guid then
+		return
+	end
+	if params[2] == "SPELL_PERIODIC_HEAL" then
+		if params[13] == "Renewing Mist" then
+			local heal_info = {}
+			heal_info.seen_at = GetTime()
+			heal_info.dest_guid = params[8]
+			heal_info.amount = params[15]
+			heal_info.over = params[16]
+			heal_info.absorb = params[17]
+			heal_info.effective = heal_info.amount - heal_info.over
+			if not myData.renewing_mist_heals[ heal_info.dest_guid ] then
+				myData.renewing_mist_heals[ heal_info.dest_guid ] = {}
+			end
+			table.insert( myData.renewing_mist_heals[ heal_info.dest_guid ], heal_info )
+		end
+	end
+end
+
+function OnEvent(self, event, ...)
+	if event == "COMBAT_LOG_EVENT_UNFILTERED" then
+		local combat_params = {...}
+		remTracker:CombatLogEvent(...)
+  elseif event == "PLAYER_LOGIN" then
 		local localizedClass, englishClass = UnitClass("player")
 		if englishClass ~= "MONK" then
 			myData.uiFrame:Hide()
@@ -505,3 +597,25 @@ end
 
 remTracker:createUIFrame()
 myFrame:SetScript("OnEvent", OnEvent)
+
+
+-- Helper functions
+
+function Helpers:ReadableNumber(num, places)
+    local ret
+    local placeValue = ("%%.%df"):format(places or 0)
+    if not num then
+        return 0
+    elseif num >= 1000000000000 then
+        ret = placeValue:format(num / 1000000000000) .. " Tril" -- trillion
+    elseif num >= 1000000000 then
+        ret = placeValue:format(num / 1000000000) .. " Bil" -- billion
+    elseif num >= 1000000 then
+        ret = placeValue:format(num / 1000000) .. " Mil" -- million
+    elseif num >= 1000 then
+        ret = placeValue:format(num / 1000) .. "k" -- thousand
+    else
+        ret = num -- hundreds
+    end
+    return ret
+end
