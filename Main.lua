@@ -600,6 +600,7 @@ end
 
 remTracker:createUIFrame()
 myFrame:SetScript("OnEvent", OnEvent)
+collectgarbage("setpause",30)
 
 
 -- Helper functions
