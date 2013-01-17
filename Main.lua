@@ -484,6 +484,9 @@ function remTracker:OnUpdate(elapsed)
 					remTracker:CacheUserInfoForUnitID( unit_id )
 				end
 			else
+				if not myData.renewing_mist_heals then
+					myData.renewing_mist_heals = {}
+				end
 				myData.renewing_mist_heals[ unit_guid ] = {}
 			end
 		end
