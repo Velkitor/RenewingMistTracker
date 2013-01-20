@@ -1,4 +1,8 @@
-local myFrame = CreateFrame("frame")
+_G.RenewingMistTracker = {}
+local remTracker = _G.RenewingMistTracker
+
+local myFrame = CreateFrame("frame", "RenewingMistTracker")
+
 myFrame:RegisterEvent("PLAYER_LOGIN")
 myFrame:RegisterEvent("ADDON_LOADED")
 myFrame:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
@@ -12,7 +16,7 @@ local myData = {
 	renewing_mist_heals = {}
 }
 local Helpers = {}
-local remTracker = {}
+
 -- Functions Section
 
 function remTracker:updateStatusBars()
@@ -129,7 +133,7 @@ function remTracker:createStatusBars( cnt )
 	for i = 1, cnt, 1 do
 		local yOffset = #myData.statusBars * 26 + 20
 		-- Create the bar
-		local bar = CreateFrame("StatusBar", nil, myData.uiFrame)
+	 	local bar = remTracker.ui:CreateProgressBar( "rem_bar" .. #myData.statusBars, remTracker.ui.parent_frame )
 		bar:SetPoint("TOPLEFT", 3, -3 - yOffset)
 		bar:SetPoint("TOPRIGHT", -3, -3 - yOffset)
 		bar:SetHeight(24)
@@ -181,167 +185,6 @@ function remTracker:createStatusBars( cnt )
 		-- Save it to our status bars table
 		table.insert( myData.statusBars, bar )
 	end
-end
-
-function remTracker:createUIFrame()
-	local frame = CreateFrame("Frame", "ReMTracker", UIParent)
-	-- Orient our UI Frame
-	frame:SetSize(204, 20)
-	frame:SetPoint("CENTER", UIParent)
-	frame:SetBackdrop({
-	    bgFile   = "Interface\\Tooltips\\UI-Tooltip-Background", tile = true, tileSize = 16,
-	    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", edgeSize = 12,
-	    insets = { left = 3, right = 3, top = 3, bottom = 3, },
-	})
-	
-	frame:SetMovable(true)
-	frame:EnableMouse(true)
-	frame:RegisterForDrag("LeftButton")
-	frame:SetUserPlaced(true)
-	frame:SetScript("OnDragStart", frame.StartMoving)
-	frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
-	
-	-- Create the ReM Indicator texture
-	frame.remTexture = frame:CreateTexture()
-	frame.remTexture:SetPoint("TOPLEFT", frame,"TOPLEFT", 0, 32)
-	frame.remTexture:SetTexture("Interface\\Icons\\ability_monk_renewingmists")
-	frame.remTexture:SetWidth(32)
-	frame.remTexture:SetHeight(32)
-	frame.remTexture:Show()
-	frame.remTexture.spellName = "Renewing Mist"
-	frame.remTexture.bounceTime = 0.75
-	frame.remTexture.bounceHeight = 7
-	frame.remTexture.animationPoint = { "TOPLEFT", frame,"TOPLEFT", 0, 32 }
-	frame.remTexture.animationGrow = true
-	frame.remTexture.animationGrowHeight = 32
-	frame.remTexture.animationTime = 0
-	
-	-- Create the ReM Indicator texture
-	frame.tftTexture = frame:CreateTexture()
-	frame.tftTexture:SetPoint("TOPLEFT", frame,"TOPLEFT", 34, 32)
-	frame.tftTexture:SetTexture("Interface\\Icons\\ability_monk_thunderfocustea")
-	frame.tftTexture:SetWidth(32)
-	frame.tftTexture:SetHeight(32)
-	frame.tftTexture:Show()
-	frame.tftTexture.spellName = "Thunder Focus Tea"
-	frame.tftTexture.bounceTime = 0.75
-	frame.tftTexture.bounceHeight = 7
-	frame.tftTexture.animationPoint = { "TOPLEFT", frame,"TOPLEFT", 34, 32 }
-	frame.tftTexture.animationGrow = true
-	frame.tftTexture.animationGrowHeight = 32
-	frame.tftTexture.animationTime = 0
-	frame.tftTexture.shouldBlink = function()
-			if myData.current_rem_targets > 5 then
-				return true
-			else
-				return false
-			end
-	end
-	
-	-- Create the ReM Indicator texture
-	frame.upliftTexture = frame:CreateTexture()
-	frame.upliftTexture:SetPoint("TOPLEFT", frame,"TOPLEFT", 68, 32)
-	frame.upliftTexture:SetTexture("Interface\\Icons\\ability_monk_uplift")
-	frame.upliftTexture:SetWidth(32)
-	frame.upliftTexture:SetHeight(32)
-	frame.upliftTexture:Show()
-	frame.upliftTexture.spellName = "Uplift"
-	frame.upliftTexture.bounceTime = 0.75
-	frame.upliftTexture.bounceHeight = 7
-	frame.upliftTexture.animationPoint = { "TOPLEFT", frame,"TOPLEFT", 68, 32 }
-	frame.upliftTexture.animationGrow = true
-	frame.upliftTexture.animationGrowHeight = 32
-	frame.upliftTexture.animationTime = 0
-	frame.upliftTexture.shouldHide = function()
-		return myData.hasRemTarget == false
-	end
-	frame.upliftTexture.shouldBlink = function()
-		if myData.targets_under_80pct > 2 then
-			return true
-		else
-			return false
-		end
-	end
-	
-	-- Create the ReM Indicator texture
-	frame.manaTeaTexture = frame:CreateTexture()
-	frame.manaTeaTexture:SetPoint("TOPLEFT", frame,"TOPLEFT", 170, 32)
-	frame.manaTeaTexture:SetTexture("Interface\\Icons\\monk_ability_cherrymanatea")
-	frame.manaTeaTexture:SetWidth(32)
-	frame.manaTeaTexture:SetHeight(32)
-	frame.manaTeaTexture:Show()
-	frame.manaTeaTexture.spellName = "Mana Tea"
-	frame.manaTeaTexture.bounceTime = 0.75
-	frame.manaTeaTexture.bounceHeight = 7
-	frame.manaTeaTexture.animationPoint = { "TOPLEFT", frame,"TOPLEFT", 170, 32 }
-	frame.manaTeaTexture.animationGrow = true
-	frame.manaTeaTexture.animationGrowHeight = 32
-	frame.manaTeaTexture.animationTime = 0
-	frame.manaTeaTexture.shouldHide = function()
-		if not myData.player.mana_pct or myData.player.mana_pct > 90 then
-			return true
-		end
-		if not remTracker:HasManaTeaGlyph() then
-			return true
-		end
-		local name, rank, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId, canApplyAura, isBossDebuff, value1, value2, value3 = UnitBuff("PLAYER", "Mana Tea", nil, "PLAYER")
-		if not count then
-			return true
-		end
-		if count > 1 then
-			return false
-		end
-		return true
-	end
-	frame.manaTeaTexture.shouldBlink = function()
-		if not myData.player.mana_pct or myData.player.mana_pct > 50 then
-			return false
-		else
-			return true
-		end
-	end
-	
-	-- Create the title text
-	frame.titleText = frame:CreateFontString(nil, "OVERLAY")
-	frame.titleText:SetPoint("CENTER", frame, "CENTER", 0, 0)
-	frame.titleText:SetFont("Fonts\\FRIZQT__.TTF", 10, "OUTLINE")
-	frame.titleText:SetJustifyH("LEFT")
-	frame.titleText:SetShadowOffset(1, -1)
-	frame.titleText:SetTextColor(0, 1, 0)
-	frame.titleText:SetText( "Renewing Mist Tracker" )
-	
-	-- Create the lock button
-	frame.dragLock = CreateFrame("Button", nil, frame)
-	frame.dragLock:SetPoint("RIGHT", frame, "RIGHT", -3, 0)
-	frame.dragLock:SetWidth(16)
-	frame.dragLock:SetHeight(16)
-	frame.dragLock:SetBackdropColor(1,1,1,1)
-
-	-- Create the texture for the button
-	frame.dragLock.texture = frame.dragLock:CreateTexture()
-	frame.dragLock.texture:SetPoint("CENTER", frame.dragLock,"CENTER", 0, 0)
-	frame.dragLock.texture:SetTexture("Interface\\BUTTONS\\CancelButton-Highlight")
-	frame.dragLock.texture:SetWidth(24)
-	frame.dragLock.texture:SetHeight(24)
-	
-	frame.dragLock.toggleDragable = function()
-		if not myData.uiFrame.dragDisabled then
-			frame.dragLock.texture:SetTexture("Interface\\BUTTONS\\CancelButton-Up")
-			frame.dragDisabled = true
-			if frame:HasScript("OnDragStart") then
-				frame:SetScript("OnDragStart", nil)
-			end
-		else
-			frame.dragLock.texture:SetTexture("Interface\\BUTTONS\\CancelButton-Highlight")
-			frame.dragDisabled = false
-			frame:SetScript("OnDragStart", frame.StartMoving)
-		end
-	end
-	frame.dragLock:SetScript("OnClick", frame.dragLock.toggleDragable)
-	frame.dragLock:Show()
-	frame:Show()
-	
-	myData.uiFrame = frame
 end
 
 function remTracker:playerLogin()
@@ -419,10 +262,10 @@ end
 function remTracker:OnUpdate(elapsed)
 	-- If we are not in healing spec hide the frame and exit this function
 	if not remTracker:IsHealingSpec() then
-			myData.uiFrame:Hide()
+			remTracker.ui:Hide()
 			return
 	else
-		myData.uiFrame:Show()
+		remTracker.ui:Show()
 	end
 	
 	--Update our mana percentage
@@ -493,10 +336,17 @@ function remTracker:OnUpdate(elapsed)
 	end
 	remTracker:updateStatusBars()
 	--Animate our bars after we have collected data.
-	remTracker:AnimateFrame(myData.uiFrame.remTexture, elapsed )
-	remTracker:AnimateFrame(myData.uiFrame.tftTexture, elapsed )
-	remTracker:AnimateFrame(myData.uiFrame.upliftTexture, elapsed )
-	remTracker:AnimateFrame(myData.uiFrame.manaTeaTexture, elapsed )
+	remTracker.ui:Animate( elapsed )
+	-- remTracker:AnimateFrame(myData.uiFrame.remTexture, elapsed )
+	-- remTracker:AnimateFrame(myData.uiFrame.tftTexture, elapsed )
+	-- remTracker:AnimateFrame(myData.uiFrame.upliftTexture, elapsed )
+	-- remTracker:AnimateFrame(myData.uiFrame.manaTeaTexture, elapsed )
+	
+	-- Check if we should GC, only collect every 30 seconds
+	if not myData.last_gc or GetTime() - myData.last_gc > 30 then
+		collectgarbage("collect")
+		myData.last_gc = GetTime()
+	end
 end
 
 function remTracker:IsHealingSpec()
@@ -577,6 +427,79 @@ function remTracker:CombatLogEvent(...)
 	end
 end
 
+
+function remTracker:RegisterIndicators()
+	local true_fn = function() return true end
+	local frame = remTracker.ui.parent_frame
+	
+	local renewing_mist = remTracker.ui:CreateSpellTexture( frame, { "TOPLEFT", frame, "TOPLEFT", 0, 32 }, 32, 32, "Renewing Mist" )
+	local thunder_focus_tea = remTracker.ui:CreateSpellTexture( frame, { "TOPLEFT", frame, "TOPLEFT", 34, 32 }, 32, 32, "Thunder Focus Tea" )
+	local uplift = remTracker.ui:CreateSpellTexture( frame, { "TOPLEFT", frame, "TOPLEFT", 68, 32 }, 32, 32, "Uplift" )
+	local mana_tea = remTracker.ui:CreateSpellTexture( frame, { "TOPLEFT", frame, "TOPLEFT", 170, 32 }, 32, 32, "Mana Tea" )
+	
+	--Setup all of the indicaors to bounce
+	remTracker.ui:Bounce( renewing_mist, 0.75, 7, true_fn )
+	remTracker.ui:Bounce( thunder_focus_tea, 0.75, 7, true_fn )
+	remTracker.ui:Bounce( uplift, 0.75, 7, true_fn )
+	remTracker.ui:Bounce( mana_tea, 0.75, 7, true_fn )
+	
+	--Set up the grow for cooldowns
+	remTracker.ui:SetCooldownGrow( renewing_mist  )
+	remTracker.ui:SetCooldownGrow( thunder_focus_tea  )
+	remTracker.ui:SetCooldownGrow( mana_tea  )
+	
+	--Set up the blink for our indicators
+	local thunder_focus_tea_blink = function()
+			if myData.current_rem_targets > 5 then
+				return true
+			else
+				return false
+			end
+	end
+	remTracker.ui:Blink( thunder_focus_tea, 1.5, thunder_focus_tea_blink )
+	
+	local uplift_blink = function()
+		if myData.targets_under_80pct > 2 then
+			return true
+		else
+			return false
+		end
+	end
+	remTracker.ui:Blink( uplift, 1.5, uplift_blink )
+	
+	local mana_tea_blink = function()
+		if not myData.player.mana_pct or myData.player.mana_pct > 50 then
+			return false
+		else
+			return true
+		end
+	end
+	remTracker.ui:Blink( mana_tea, 1.5, mana_tea_blink )
+	
+	-- Set up when to hide
+	local uplift_should_hide = function()
+		return myData.hasRemTarget == false
+	end
+	remTracker.ui:ShouldHide( uplift, uplift_should_hide )
+	local mana_tea_hide = function()
+		if not myData.player.mana_pct or myData.player.mana_pct > 90 then
+			return true
+		end
+		if not remTracker:HasManaTeaGlyph() then
+			return true
+		end
+		local name, rank, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId, canApplyAura, isBossDebuff, value1, value2, value3 = UnitBuff("PLAYER", "Mana Tea", nil, "PLAYER")
+		if not count then
+			return true
+		end
+		if count > 1 then
+			return false
+		end
+		return true
+	end
+	remTracker.ui:ShouldHide( mana_tea, mana_tea_hide )
+end
+
 function OnEvent(self, event, ...)
 	if event == "COMBAT_LOG_EVENT_UNFILTERED" then
 		local combat_params = {...}
@@ -584,13 +507,19 @@ function OnEvent(self, event, ...)
   elseif event == "PLAYER_LOGIN" then
 		local localizedClass, englishClass = UnitClass("player")
 		if englishClass ~= "MONK" then
-			myData.uiFrame:Hide()
+			remTracker.ui:Hide()
 			DEFAULT_CHAT_FRAME:AddMessage( "Renewing Mist Tracker: This character is not a monk, not loading.", 0.5, 1, 0.831 )
 			return
 		end
 		remTracker:playerLogin()
 		remTracker:QueryGlyphs()
 	elseif event == "ADDON_LOADED" then
+		if not remTracker.ui_loaded then
+			remTracker.ui:SetupBaseFrames()
+			remTracker.ui_loaded = true
+			
+			remTracker:RegisterIndicators()
+		end
 	elseif event == "ACTIVE_TALENT_GROUP_CHANGED" then
 		-- The spec number is passed to us, but this reads better.
 		myData.player.spec = GetSpecialization()
@@ -598,10 +527,7 @@ function OnEvent(self, event, ...)
   end
 end
 
-remTracker:createUIFrame()
 myFrame:SetScript("OnEvent", OnEvent)
-collectgarbage("setpause",1000)
-
 
 -- Helper functions
 
