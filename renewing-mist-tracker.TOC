@@ -2,10 +2,11 @@
 ## Title: Renewing Mist Tracker
 ## SavedVariablesPerCharacter: ReMTrackerPos
 ## Author: Xpres
-## Version: 1.05.01
+## Version: 1.05.02
 
 embeds.xml
 
 Main.lua
 
 Ui.lua
+Data.lua
