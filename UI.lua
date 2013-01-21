@@ -62,15 +62,15 @@ function ui:SetupBaseFrames(  )
 	frame.dragLock.texture:SetHeight(24)
 	
 	frame.dragLock.toggleDragable = function()
-		if not myData.uiFrame.dragDisabled then
+		if not ui.parent_frame.drag_disabled then
 			frame.dragLock.texture:SetTexture("Interface\\BUTTONS\\CancelButton-Up")
-			frame.dragDisabled = true
+			frame.drag_disabled = true
 			if frame:HasScript("OnDragStart") then
 				frame:SetScript("OnDragStart", nil)
 			end
 		else
 			frame.dragLock.texture:SetTexture("Interface\\BUTTONS\\CancelButton-Highlight")
-			frame.dragDisabled = false
+			frame.drag_disabled = false
 			frame:SetScript("OnDragStart", frame.StartMoving)
 		end
 	end
