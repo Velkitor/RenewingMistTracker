@@ -30,7 +30,7 @@ function ui:Scale( value )
 end
 
 function ui:SetPosition( x, y )
-	ui.parent_frame:SetPoint("TOPLEFT", UIParent, x,  y)
+	ui.parent_frame:SetPoint("BOTTOMLEFT", UIParent, x,  y)
 end
 
 function ui:SetupBaseFrames(  )

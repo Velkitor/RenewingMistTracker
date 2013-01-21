@@ -2,7 +2,7 @@
 ## Title: Renewing Mist Tracker
 ## SavedVariablesPerCharacter: ReMTrackerDB
 ## Author: Xpres
-## Version: 1.05.03
+## Version: 1.05.04
 
 embeds.xml
 

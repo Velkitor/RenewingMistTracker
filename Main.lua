@@ -33,6 +33,7 @@ end
 function remTracker:updateStatusBars()
 	myData.current_rem_targets = 0
 	local targets_under_80pct = 0
+	myData.hasRemTarget = false
 
 	-- Clean up our old ordered targets table
 	for i = 1, #ordered_rem_targets, 1 do
@@ -41,6 +42,7 @@ function remTracker:updateStatusBars()
 	-- Count our current targets
 	for k,v in pairs(remTracker.data.units) do
 		if v["Renewing Mist"] and v["Renewing Mist"].duration and v["Renewing Mist"].duration > 0 then
+			myData.hasRemTarget = true
 			myData.current_rem_targets = myData.current_rem_targets + 1
 			table.insert( ordered_rem_targets, v )
 		end
