@@ -97,6 +97,22 @@ function remTracker:updateStatusBars()
 			myData.statusBars[ status_bar_index ].health_pct:SetText( "0.00%" )
 		end
 		
+		if v["Renewing Mist"].last_heal then
+			if v["Renewing Mist"].last_heal.at > GetTime() - 1.2 then
+				local heal_string = Helpers:ReadableNumber(v["Renewing Mist"].last_heal.effective, 2) .. " ( O: ".. Helpers:ReadableNumber(v["Renewing Mist"].last_heal.over, 2) .. " )"
+				myData.statusBars[ status_bar_index ].heal_amt:SetText( heal_string )
+				local fade = 1
+				-- Are we fading in?  Fade in for .6 sec
+				if v["Renewing Mist"].last_heal.at > GetTime() - 0.6 then
+					local delta_time = v["Renewing Mist"].last_heal.at - ( GetTime() - 1.2 )
+					fade = math.sin( ( delta_time / 0.6)  * ( math.pi / 2 ) )
+				end
+				myData.statusBars[ status_bar_index ].heal_amt:SetTextColor(0, 1, 0, fade)
+			else
+				myData.statusBars[ status_bar_index ].heal_amt:SetText( "" )
+				myData.statusBars[ status_bar_index ].heal_amt:SetTextColor(0, 1, 0, 0)
+			end
+		end
 		--Set the progressbar state
 		myData.statusBars[ status_bar_index ]:SetMinMaxValues(0, v["Renewing Mist"].duration)
 		myData.statusBars[ status_bar_index ]:SetValue( remaining_time )
@@ -287,25 +303,19 @@ function remTracker:CacheUserInfoForUnitID( unit_id )
 end
 
 function remTracker:CombatLogEvent(...)
-	local params = {...}
 	-- If it is not from us, ignore it.
-	if params[4] ~= myData.player.guid then
+	if select(4,...) ~= myData.player.guid then
 		return
 	end
-	if params[2] == "SPELL_PERIODIC_HEAL" then
-		-- if params[13] == "Renewing Mist" then
-		-- 			local heal_info = {}
-		-- 			heal_info.seen_at = GetTime()
-		-- 			heal_info.dest_guid = params[8]
-		-- 			heal_info.amount = params[15]
-		-- 			heal_info.over = params[16]
-		-- 			heal_info.absorb = params[17]
-		-- 			heal_info.effective = heal_info.amount - heal_info.over
-		-- 			if not myData.renewing_mist_heals[ heal_info.dest_guid ] then
-		-- 				myData.renewing_mist_heals[ heal_info.dest_guid ] = {}
-		-- 			end
-		-- 			table.insert( myData.renewing_mist_heals[ heal_info.dest_guid ], heal_info )
-		-- 		end
+	if select(2,...) == "SPELL_PERIODIC_HEAL" then
+		if select(13,...) == "Renewing Mist" then
+		 	local seen_at = GetTime()
+			local dest_guid = select(8,...)
+			local amount = select(15,...)
+			local over = select(16,...)
+			local effective = amount - over
+			remTracker.data:UpdateRenewingMistTick( seen_at, dest_guid, amount, over, effective)
+		end
 	end
 end
 
@@ -385,7 +395,7 @@ end
 function OnEvent(self, event, ...)
 	local arg1 = select(1, ...) or ""
 	if event == "COMBAT_LOG_EVENT_UNFILTERED" then
---		remTracker:CombatLogEvent(...)
+		remTracker:CombatLogEvent(...)
   elseif event == "PLAYER_LOGIN" then
 		local localizedClass, englishClass = UnitClass("player")
 		if englishClass ~= "MONK" then

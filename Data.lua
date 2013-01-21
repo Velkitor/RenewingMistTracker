@@ -22,7 +22,6 @@ function Data:LoadUnitInfo( unit_id )
 	unit_info.class_name = class_name
 	
 	Data.units[ guid ] = unit_info
-	
 	return unit_info
 end
 
@@ -68,4 +67,21 @@ function Data:QuerySpellInfoForUnit( spell_name, unit_id )
 	spell_info.expiration_time = expiration_time
 	
 	return spell_info
+end
+
+function Data:UpdateRenewingMistTick( seen_at, target_guid, amount, over, effective)
+	local unit_info = Data.units[ target_guid ]
+	if not unit_info then
+		return
+	end
+	if not unit_info["Renewing Mist"] then
+		return
+	end
+	local last_heal = unit_info["Renewing Mist"].last_heal or {}
+	last_heal.at = seen_at or GetTime()
+	last_heal.amount = amount or 0
+	last_heal.over = over or 0
+	last_heal.effective = effective
+	
+	unit_info["Renewing Mist"].last_heal = last_heal
 end
