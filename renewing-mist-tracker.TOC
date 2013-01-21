@@ -1,6 +1,6 @@
 ## Interface: 50100
 ## Title: Renewing Mist Tracker
-## SavedVariablesPerCharacter: ReMTrackerPos
+## SavedVariablesPerCharacter: ReMTrackerDB
 ## Author: Xpres
 ## Version: 1.05.02
 
@@ -10,3 +10,9 @@ Main.lua
 
 Ui.lua
 Data.lua
+
+
+
+
+
+SlashCmd.lua

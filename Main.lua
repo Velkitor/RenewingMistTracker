@@ -1,8 +1,8 @@
 _G.RenewingMistTracker = {}
 local remTracker = _G.RenewingMistTracker
-
 local myFrame = CreateFrame("frame", "RenewingMistTracker")
 
+--Register Events
 myFrame:RegisterEvent("PLAYER_LOGIN")
 myFrame:RegisterEvent("ADDON_LOADED")
 myFrame:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
@@ -383,6 +383,7 @@ function remTracker:RegisterIndicators()
 end
 
 function OnEvent(self, event, ...)
+	local arg1 = select(1, ...) or ""
 	if event == "COMBAT_LOG_EVENT_UNFILTERED" then
 --		remTracker:CombatLogEvent(...)
   elseif event == "PLAYER_LOGIN" then
@@ -394,12 +395,17 @@ function OnEvent(self, event, ...)
 		end
 		remTracker:playerLogin()
 		remTracker:QueryGlyphs()
-	elseif event == "ADDON_LOADED" then
+	elseif event == "ADDON_LOADED" and arg1 == "renewing-mist-tracker" then
 		if not remTracker.ui_loaded then
 			remTracker.ui:SetupBaseFrames()
 			remTracker.ui_loaded = true
-			
 			remTracker:RegisterIndicators()
+			if ReMTrackerDB == nil then
+		   	ReMTrackerDB = {};
+		  end
+			if ReMTrackerDB.scale then
+				remTracker.ui:Scale( ReMTrackerDB.scale )
+			end
 		end
 	elseif event == "ACTIVE_TALENT_GROUP_CHANGED" then
 		-- The spec number is passed to us, but this reads better.
@@ -430,3 +436,4 @@ function Helpers:ReadableNumber(num, places)
     end
     return ret
 end
+

@@ -20,11 +20,24 @@ function ui:Show()
 	ui.frame_hidden = false
 end
 
+function ui:Scale( value )
+	if not value or value < 0.1 then
+		ui.parent_frame:SetScale( 1 )
+	else
+		ui.parent_frame:SetScale( value )
+		ReMTrackerDB.scale = value
+	end
+end
+
+function ui:SetPosition( x, y )
+	ui.parent_frame:SetPoint("TOPLEFT", UIParent, x,  y)
+end
+
 function ui:SetupBaseFrames(  )
 	local frame = CreateFrame("Frame", "ReMTracker", UIParent)
 	-- Orient our UI Frame
 	frame:SetSize(204, 20)
-	frame:SetPoint("CENTER", UIParent)
+	frame:SetPoint("CENTER", UIParent )
 	frame:SetBackdrop({
 	    bgFile   = "Interface\\Tooltips\\UI-Tooltip-Background", tile = true, tileSize = 16,
 	    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", edgeSize = 12,
@@ -33,6 +46,7 @@ function ui:SetupBaseFrames(  )
 	
 	frame:SetMovable(true)
 	frame:EnableMouse(true)
+	frame:SetClampedToScreen( true )
 	frame:RegisterForDrag("LeftButton")
 	frame:SetUserPlaced(true)
 	frame:SetScript("OnDragStart", frame.StartMoving)
@@ -40,7 +54,7 @@ function ui:SetupBaseFrames(  )
 	
 	-- Create the title text
 	frame.titleText = frame:CreateFontString(nil, "OVERLAY")
-	frame.titleText:SetPoint("CENTER", frame, "CENTER", 0, 0)
+	frame.titleText:SetPoint("CENTER", frame, "CENTER", 1, 1)
 	frame.titleText:SetFont("Fonts\\FRIZQT__.TTF", 10, "OUTLINE")
 	frame.titleText:SetJustifyH("LEFT")
 	frame.titleText:SetShadowOffset(1, -1)
