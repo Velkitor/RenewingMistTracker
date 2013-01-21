@@ -14,7 +14,8 @@ local myData = {
 	statusBars = {},
 	renewing_mist_targets = {},
 	renewing_mist_heals = {},
-	current_rem_targets = 0
+	current_rem_targets = 0,
+	targets_under_80pct = 0
 }
 local Helpers = {}
 
@@ -32,7 +33,7 @@ end
 
 function remTracker:updateStatusBars()
 	myData.current_rem_targets = 0
-	local targets_under_80pct = 0
+	myData.targets_under_80pct = 0
 	myData.hasRemTarget = false
 
 	-- Clean up our old ordered targets table
@@ -44,6 +45,9 @@ function remTracker:updateStatusBars()
 		if v["Renewing Mist"] and v["Renewing Mist"].duration and v["Renewing Mist"].duration > 0 then
 			myData.hasRemTarget = true
 			myData.current_rem_targets = myData.current_rem_targets + 1
+			if v.pct_hp and v.pct_hp < 80 then
+				myData.targets_under_80pct = myData.targets_under_80pct + 1
+			end
 			table.insert( ordered_rem_targets, v )
 		end
 	end
@@ -83,9 +87,6 @@ function remTracker:updateStatusBars()
 		--Set the current health percentage
 		if v.pct_hp then
 			myData.statusBars[ status_bar_index ].health_pct:SetText( string.format("%4.1f", v.pct_hp ) .. "%" )
-			if v.pct_hp < 80 then
-				targets_under_80pct = targets_under_80pct + 1
-			end
 			local health_level = ( v.pct_hp - 35 )
 			if health_level < 0 then
 				health_level = 0
@@ -121,7 +122,6 @@ function remTracker:updateStatusBars()
 		-- Increment the status bar index for the next iteration
 		status_bar_index = status_bar_index + 1
 	end
-	myData.targets_under_80pct = targets_under_80pct
 end
 
 function remTracker:createStatusBars( cnt )
