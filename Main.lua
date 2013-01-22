@@ -191,6 +191,9 @@ function remTracker:playerLogin()
 	myData.player.spec = GetSpecialization()
 	-- Add ourselves to the database of seen players
 	remTracker:CacheUserInfoForUnitID( "PLAYER" )
+	
+	remTracker:RegisterIndicators()
+	
 	DEFAULT_CHAT_FRAME:AddMessage( "Renewing Mist Tracker Loaded", 0.5, 1, 0.831 )
 end
 
@@ -411,7 +414,7 @@ function OnEvent(self, event, ...)
 		if not remTracker.ui_loaded then
 			remTracker.ui:SetupBaseFrames()
 			remTracker.ui_loaded = true
-			remTracker:RegisterIndicators()
+
 			if ReMTrackerDB == nil then
 		   	ReMTrackerDB = {};
 		  end
