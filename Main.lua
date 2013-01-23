@@ -42,7 +42,7 @@ function remTracker:updateStatusBars()
 	end
 	-- Count our current targets
 	for k,v in pairs(remTracker.data.units) do
-		if v["Renewing Mist"] and v["Renewing Mist"].duration and v["Renewing Mist"].duration > 0 then
+		if v["Renewing Mist"] and v["Renewing Mist"].duration and v["Renewing Mist"].duration > 0 and v["Renewing Mist"].expiration_time < GetTime() then
 			myData.hasRemTarget = true
 			myData.current_rem_targets = myData.current_rem_targets + 1
 			if v.pct_hp and v.pct_hp < 80 then
