@@ -66,7 +66,6 @@ function Data:QuerySpellInfoForUnit( spell, unit_id )
 	end
 	local spell_info = unit_info[ spell ]
 	
-	print( "Querying spell: " .. spell )
 	spell_info.name = name
 	spell_info.icon = icon
 	spell_info.count = count
