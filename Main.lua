@@ -1,5 +1,47 @@
 _G.RenewingMistTracker = {}
 local remTracker = _G.RenewingMistTracker
+remTracker.SpellIDs = {
+	["Renewing Mist"] = {id = 119611},
+	["Thunder Focus Tea"] = {id =116680},
+	["Uplift"] = {id =116670},
+	["Mana Tea"] = {id =123761} 
+}
+
+function remTracker:GetLocalSpellNameFromID( id )
+	if not id then
+		return nil
+	end
+	local name, rank, icon, powerCost, isFunnel, powerType, castingTime, minRange, maxRange = GetSpellInfo( id )
+	return name
+end
+
+function remTracker:GetSpellID( spell_name )
+	if not spell_name then
+		return nil
+	end
+	if not remTracker.SpellIDs[ spell_name ] then
+		return nil
+	end
+	if not remTracker.SpellIDs[ spell_name ].name then
+		-- Load the name, this should pick up the proper local name
+		remTracker.SpellIDs[ spell_name ].name = remTracker:GetLocalSpellNameFromID( remTracker.SpellIDs[ spell_name ].id )
+	end
+	return remTracker.SpellIDs[ spell_name ].id
+end
+
+function remTracker:GetLocalSpellName( spell_name )
+	if not spell_name then
+		return nil
+	end
+	if not remTracker.SpellIDs[ spell_name ] then
+		return nil
+	end
+	if not remTracker.SpellIDs[ spell_name ].name then
+		-- Load the name, this should pick up the proper local name
+		remTracker.SpellIDs[ spell_name ].name = remTracker:GetLocalSpellNameFromID( remTracker.SpellIDs[ spell_name ].id )
+	end
+	return remTracker.SpellIDs[ spell_name ].name
+end
 local myFrame = CreateFrame("frame", "RenewingMistTracker")
 
 --Register Events
@@ -19,6 +61,7 @@ local myData = {
 }
 local Helpers = {}
 
+
 -- Functions Section
 
 local ordered_rem_targets = {}
@@ -28,7 +71,7 @@ local sort_units_by_rem_time = function( a, b )
 	-- else if not b or not b["Renewing Mist"] or not b["Renewing Mist"].expiration_time then
 	-- 	return true
 	-- end
-	return a["Renewing Mist"].expiration_time < b["Renewing Mist"].expiration_time
+	return a[remTracker:GetSpellID( "Renewing Mist" )].expiration_time < b[remTracker:GetSpellID( "Renewing Mist" )].expiration_time
 end
 
 function remTracker:updateStatusBars()
@@ -42,7 +85,7 @@ function remTracker:updateStatusBars()
 	end
 	-- Count our current targets
 	for k,v in pairs(remTracker.data.units) do
-		if v["Renewing Mist"] and v["Renewing Mist"].duration and v["Renewing Mist"].duration > 0 and v["Renewing Mist"].expiration_time > GetTime() then
+		if v[remTracker:GetSpellID( "Renewing Mist" )] and v[remTracker:GetSpellID( "Renewing Mist" )].duration and v[remTracker:GetSpellID( "Renewing Mist" )].duration > 0 and v[remTracker:GetSpellID( "Renewing Mist" )].expiration_time > GetTime() then
 			myData.hasRemTarget = true
 			myData.current_rem_targets = myData.current_rem_targets + 1
 			if v.pct_hp and v.pct_hp < 80 then
@@ -76,7 +119,7 @@ function remTracker:updateStatusBars()
 		myData.statusBars[ status_bar_index ].value:SetText( v.name )
 		local class_color = RAID_CLASS_COLORS[v.class_name]
 		local remaining_time = 0
-		remaining_time = v["Renewing Mist"].expiration_time - GetTime()
+		remaining_time = v[remTracker:GetSpellID( "Renewing Mist" )].expiration_time - GetTime()
 		if remaining_time < 0 then
 			remaining_time = 0
 		end
@@ -100,14 +143,14 @@ function remTracker:updateStatusBars()
 			myData.statusBars[ status_bar_index ].health_pct:SetText( "0.00%" )
 		end
 		
-		if v["Renewing Mist"].last_heal then
-			if v["Renewing Mist"].last_heal.at > GetTime() - 1.2 then
-				local heal_string = Helpers:ReadableNumber(v["Renewing Mist"].last_heal.effective, 2) .. " ( O: ".. Helpers:ReadableNumber(v["Renewing Mist"].last_heal.over, 2) .. " )"
+		if v[remTracker:GetSpellID( "Renewing Mist" )].last_heal then
+			if v[remTracker:GetSpellID( "Renewing Mist" )].last_heal.at > GetTime() - 1.2 then
+				local heal_string = Helpers:ReadableNumber(v[remTracker:GetSpellID( "Renewing Mist" )].last_heal.effective, 2) .. " ( O: ".. Helpers:ReadableNumber(v[remTracker:GetSpellID( "Renewing Mist" )].last_heal.over, 2) .. " )"
 				myData.statusBars[ status_bar_index ].heal_amt:SetText( heal_string )
 				local fade = 1
 				-- Are we fading in?  Fade in for .6 sec
-				if v["Renewing Mist"].last_heal.at > GetTime() - 0.6 then
-					local delta_time = v["Renewing Mist"].last_heal.at - ( GetTime() - 1.2 )
+				if v[remTracker:GetSpellID( "Renewing Mist" )].last_heal.at > GetTime() - 0.6 then
+					local delta_time = v[remTracker:GetSpellID( "Renewing Mist" )].last_heal.at - ( GetTime() - 1.2 )
 					fade = math.sin( ( delta_time / 0.6)  * ( math.pi / 2 ) )
 				end
 				myData.statusBars[ status_bar_index ].heal_amt:SetTextColor(0, 1, 0, fade)
@@ -117,7 +160,7 @@ function remTracker:updateStatusBars()
 			end
 		end
 		--Set the progressbar state
-		myData.statusBars[ status_bar_index ]:SetMinMaxValues(0, v["Renewing Mist"].duration)
+		myData.statusBars[ status_bar_index ]:SetMinMaxValues(0, v[remTracker:GetSpellID( "Renewing Mist" )].duration)
 		myData.statusBars[ status_bar_index ]:SetValue( remaining_time )
 		-- Increment the status bar index for the next iteration
 		status_bar_index = status_bar_index + 1
@@ -248,14 +291,14 @@ function remTracker:OnUpdate(elapsed)
 		grp_type = "raid"
 	end
 	-- Check self
-	remTracker.data:QuerySpellInfoForUnit( "Renewing Mist", "PLAYER" )
+	remTracker.data:QuerySpellInfoForUnit( remTracker:GetSpellID( "Renewing Mist" ), "PLAYER" )
 	remTracker.data:UpdateUnitHealth( "PLAYER" )
 	
 	if members then
 		for i = 1, members, 1 do
 			local unit_id = grp_type .. i
 			remTracker.data:LoadUnitInfo( unit_id )
-			remTracker.data:QuerySpellInfoForUnit( "Renewing Mist", unit_id )
+			remTracker.data:QuerySpellInfoForUnit( remTracker:GetSpellID( "Renewing Mist" ), unit_id )
 			remTracker.data:UpdateUnitHealth( unit_id )
 		end
 	end
@@ -313,7 +356,8 @@ function remTracker:CombatLogEvent(...)
 		return
 	end
 	if select(2,...) == "SPELL_PERIODIC_HEAL" then
-		if select(13,...) == "Renewing Mist" then
+		-- Change to spell id.
+		if select(12,...) == remTracker:GetSpellID( "Renewing Mist" ) then
 		 	local seen_at = GetTime()
 			local dest_guid = select(8,...)
 			local amount = select(15,...)
@@ -329,10 +373,10 @@ function remTracker:RegisterIndicators()
 	local true_fn = function() return true end
 	local frame = remTracker.ui.parent_frame
 	
-	local renewing_mist = remTracker.ui:CreateSpellTexture( frame, { "TOPLEFT", frame, "TOPLEFT", 0, 32 }, 32, 32, "Renewing Mist" )
-	local thunder_focus_tea = remTracker.ui:CreateSpellTexture( frame, { "TOPLEFT", frame, "TOPLEFT", 34, 32 }, 32, 32, "Thunder Focus Tea" )
-	local uplift = remTracker.ui:CreateSpellTexture( frame, { "TOPLEFT", frame, "TOPLEFT", 68, 32 }, 32, 32, "Uplift" )
-	local mana_tea = remTracker.ui:CreateSpellTexture( frame, { "TOPLEFT", frame, "TOPLEFT", 170, 32 }, 32, 32, "Mana Tea" )
+	local renewing_mist = remTracker.ui:CreateSpellTexture( frame, { "TOPLEFT", frame, "TOPLEFT", 0, 32 }, 32, 32, remTracker:GetSpellID( "Renewing Mist" ) )
+	local thunder_focus_tea = remTracker.ui:CreateSpellTexture( frame, { "TOPLEFT", frame, "TOPLEFT", 34, 32 }, 32, 32, remTracker:GetSpellID( "Thunder Focus Tea" ) )
+	local uplift = remTracker.ui:CreateSpellTexture( frame, { "TOPLEFT", frame, "TOPLEFT", 68, 32 }, 32, 32, remTracker:GetSpellID( "Uplift" ) )
+	local mana_tea = remTracker.ui:CreateSpellTexture( frame, { "TOPLEFT", frame, "TOPLEFT", 170, 32 }, 32, 32, remTracker:GetSpellID( "Mana Tea" ) )
 	
 	--Setup all of the indicaors to bounce
 	remTracker.ui:Bounce( renewing_mist, 0.75, 7, true_fn )
@@ -385,7 +429,7 @@ function remTracker:RegisterIndicators()
 		if not remTracker:HasManaTeaGlyph() then
 			return true
 		end
-		local name, rank, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId, canApplyAura, isBossDebuff, value1, value2, value3 = UnitBuff("PLAYER", "Mana Tea", nil, "PLAYER")
+		local name, rank, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId, canApplyAura, isBossDebuff, value1, value2, value3 = UnitBuff("PLAYER", remTracker:GetLocalSpellName( "Mana Tea" ), nil, "PLAYER")
 		if not count then
 			return true
 		end

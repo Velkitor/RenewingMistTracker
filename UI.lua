@@ -106,6 +106,9 @@ function ui:CreateProgressBar( name, frame )
 end
 
 function ui:CreateTexture( frame, position, icon, w, h )
+	if not icon or not w or not h then
+		return
+	end
 	local texture = frame:CreateTexture()
 
 	texture:SetPoint( position[1], frame, position[3], position[4], position[5] )
@@ -120,10 +123,10 @@ function ui:CreateTexture( frame, position, icon, w, h )
 	return texture
 end
 
-function ui:CreateSpellTexture( frame, position, w, h, spell_name )
-	local name, rank, icon, powerCost, isFunnel, powerType, castingTime, minRange, maxRange = GetSpellInfo( spell_name )
+function ui:CreateSpellTexture( frame, position, w, h, spell )
+	local name, rank, icon, powerCost, isFunnel, powerType, castingTime, minRange, maxRange = GetSpellInfo( spell )
 	local texture = ui:CreateTexture( frame, position, icon, w, h )
-	texture.spell_name = spell_name
+	texture.spell_name = name
 	
 	return texture
 end

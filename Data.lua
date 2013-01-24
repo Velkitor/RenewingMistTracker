@@ -41,8 +41,8 @@ function Data:UpdateUnitHealth( unit_id )
 	return unit_info
 end
 
-function Data:QuerySpellInfoForUnit( spell_name, unit_id )
-	if not spell_name then
+function Data:QuerySpellInfoForUnit( spell, unit_id )
+	if not spell then
 		return nil
 	end
 	if not unit_id then
@@ -53,13 +53,20 @@ function Data:QuerySpellInfoForUnit( spell_name, unit_id )
 		return nil
 	end
 	local guid = UnitGUID( unit_id )
+	local spell_name = nil
+	if type( spell ) == "number" then
+		spell_name = RenewingMistTracker:GetLocalSpellNameFromID( spell )
+	else
+		spell_name = RenewingMistTracker:GetLocalSpellName( spell )
+	end
 	local name, rank, icon, count, debuffType, duration, expiration_time, unitCaster, isStealable, shouldConsolidate, spellId, canApplyAura, isBossDebuff, value1, value2, value3 = UnitBuff(unit_id, spell_name, nil, "PLAYER")
 		
-	if not unit_info[ spell_name ] then
-		unit_info[ spell_name ] = {}
+	if not unit_info[ spell ] then
+		unit_info[ spell ] = {}
 	end
-	local spell_info = unit_info[ spell_name ]
+	local spell_info = unit_info[ spell ]
 	
+	print( "Querying spell: " .. spell )
 	spell_info.name = name
 	spell_info.icon = icon
 	spell_info.count = count
@@ -74,14 +81,14 @@ function Data:UpdateRenewingMistTick( seen_at, target_guid, amount, over, effect
 	if not unit_info then
 		return
 	end
-	if not unit_info["Renewing Mist"] then
+	if not unit_info[RenewingMistTracker:GetSpellID( "Renewing Mist" )] then
 		return
 	end
-	local last_heal = unit_info["Renewing Mist"].last_heal or {}
+	local last_heal = unit_info[RenewingMistTracker:GetSpellID( "Renewing Mist" )].last_heal or {}
 	last_heal.at = seen_at or GetTime()
 	last_heal.amount = amount or 0
 	last_heal.over = over or 0
 	last_heal.effective = effective
 	
-	unit_info["Renewing Mist"].last_heal = last_heal
+	unit_info[RenewingMistTracker:GetSpellID( "Renewing Mist" )].last_heal = last_heal
 end
