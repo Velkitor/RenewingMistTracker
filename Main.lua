@@ -373,10 +373,37 @@ function remTracker:RegisterIndicators()
 	local true_fn = function() return true end
 	local frame = remTracker.ui.parent_frame
 	
+	-- Create the texture
 	local renewing_mist = remTracker.ui:CreateSpellTexture( frame, { "TOPLEFT", frame, "TOPLEFT", 0, 32 }, 32, 32, remTracker:GetSpellID( "Renewing Mist" ) )
 	local thunder_focus_tea = remTracker.ui:CreateSpellTexture( frame, { "TOPLEFT", frame, "TOPLEFT", 34, 32 }, 32, 32, remTracker:GetSpellID( "Thunder Focus Tea" ) )
 	local uplift = remTracker.ui:CreateSpellTexture( frame, { "TOPLEFT", frame, "TOPLEFT", 68, 32 }, 32, 32, remTracker:GetSpellID( "Uplift" ) )
 	local mana_tea = remTracker.ui:CreateSpellTexture( frame, { "TOPLEFT", frame, "TOPLEFT", 170, 32 }, 32, 32, remTracker:GetSpellID( "Mana Tea" ) )
+	
+	--Create the clicks
+	-- ReM
+	local renewing_mist_cast = CreateFrame("Button", nil, frame, "SecureActionButtonTemplate")
+	renewing_mist_cast:SetPoint( "TOPLEFT", frame, "TOPLEFT", 0, 35 ) 
+	renewing_mist_cast:SetSize(32, 35)
+	renewing_mist_cast:SetAttribute( "type", "spell" )
+	renewing_mist_cast:SetAttribute( "spell", remTracker:GetLocalSpellName( "Renewing Mist" ) )
+	--TFT
+	local thunder_focus_tea_cast = CreateFrame("Button", nil, frame, "SecureActionButtonTemplate")
+	thunder_focus_tea_cast:SetPoint( "TOPLEFT", frame, "TOPLEFT", 34, 35 ) 
+	thunder_focus_tea_cast:SetSize(32, 35)
+	thunder_focus_tea_cast:SetAttribute( "type", "spell" )
+	thunder_focus_tea_cast:SetAttribute( "spell", remTracker:GetLocalSpellName( "Thunder Focus Tea" ) )
+	
+	local uplift_cast = CreateFrame("Button", nil, frame, "SecureActionButtonTemplate")
+	uplift_cast:SetPoint( "TOPLEFT", frame, "TOPLEFT", 68, 35 ) 
+	uplift_cast:SetSize(32, 35)
+	uplift_cast:SetAttribute( "type", "spell" )
+	uplift_cast:SetAttribute( "spell", remTracker:GetLocalSpellName( "Uplift" ) )
+	
+	local mana_tea_cast = CreateFrame("Button", nil, frame, "SecureActionButtonTemplate")
+	mana_tea_cast:SetPoint( "TOPLEFT", frame, "TOPLEFT", 170, 35 ) 
+	mana_tea_cast:SetSize(32, 35)
+	mana_tea_cast:SetAttribute( "type", "spell" )
+	mana_tea_cast:SetAttribute( "spell", remTracker:GetLocalSpellName( "Mana Tea" ) )
 	
 	--Setup all of the indicaors to bounce
 	remTracker.ui:Bounce( renewing_mist, 0.75, 7, true_fn )
@@ -384,6 +411,15 @@ function remTracker:RegisterIndicators()
 	remTracker.ui:Bounce( uplift, 0.75, 7, true_fn )
 	remTracker.ui:Bounce( mana_tea, 0.75, 7, true_fn )
 	
+	-- Save the protected frames to the ui table
+	if not remTracker.ui.protected_frames then
+		remTracker.ui.protected_frames = {}
+	end
+	
+	remTracker.ui.protected_frames.renewing_mist_cast = renewing_mist_cast
+	remTracker.ui.protected_frames.thunder_focus_tea_cast = thunder_focus_tea_cast
+	remTracker.ui.protected_frames.uplift_cast = uplift_cast
+	remTracker.ui.protected_frames.mana_tea_cast = mana_tea_cast
 	--Set up the grow for cooldowns
 	remTracker.ui:SetCooldownGrow( renewing_mist  )
 	remTracker.ui:SetCooldownGrow( thunder_focus_tea  )
