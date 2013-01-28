@@ -10,12 +10,24 @@ function ui:Hide()
 	if ui.parent_frame then
 		ui.parent_frame:Hide()
 	end
+	if ui.compact_parent_frame then
+		ui.compact_parent_frame:Hide()
+	end
 	ui.frame_hidden = true
 end
 
 function ui:Show()
-	if ui.parent_frame then
-		ui.parent_frame:Show()
+	if not ReMTrackerDB.mode then
+		ReMTrackerDB.mode = "standard"
+	end
+	if ReMTrackerDB.mode == "compact" then
+		if ui.compact_parent_frame then
+			ui.compact_parent_frame:Show()
+		end
+	else
+		if ui.parent_frame then
+			ui.parent_frame:Show()
+		end
 	end
 	ui.frame_hidden = false
 end
@@ -23,9 +35,23 @@ end
 function ui:Scale( value )
 	if not value or value < 0.1 then
 		ui.parent_frame:SetScale( 1 )
+		ui.compact_parent_frame:SetScale( 1 )
 	else
 		ui.parent_frame:SetScale( value )
+		ui.compact_parent_frame:SetScale( value )
 		ReMTrackerDB.scale = value
+	end
+end
+
+function ui:ToggleCompact()
+	if ReMTrackerDB.mode == "compact" then
+		ReMTrackerDB.mode = "standard"
+		ui.parent_frame:Show()
+		ui.compact_parent_frame:Hide()
+	else
+		ReMTrackerDB.mode = "compact"
+		ui.parent_frame:Hide()
+		ui.compact_parent_frame:Show()
 	end
 end
 
@@ -34,6 +60,11 @@ function ui:SetPosition( x, y )
 end
 
 function ui:SetupBaseFrames(  )
+---------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------
+------  Big Frame
+---------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------
 	local frame = CreateFrame("Frame", "ReMTracker", UIParent)
 	-- Orient our UI Frame
 	frame:SetSize(204, 20)
@@ -51,6 +82,7 @@ function ui:SetupBaseFrames(  )
 	frame:SetUserPlaced(true)
 	frame:SetScript("OnDragStart", frame.StartMoving)
 	frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
+	frame:Hide()
 	
 	-- Create the title text
 	frame.titleText = frame:CreateFontString(nil, "OVERLAY")
@@ -93,6 +125,85 @@ function ui:SetupBaseFrames(  )
 	frame:Show()
 	
 	ui.parent_frame = frame
+	
+---------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------
+------  Compact Frame
+---------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------
+	local compact = CreateFrame("Frame", "ReMTrackerCompact", UIParent)
+	local name, rank, icon, powerCost, isFunnel, powerType, castingTime, minRange, maxRange = GetSpellInfo( RenewingMistTracker:GetSpellID( "Renewing Mist" ) )
+	-- Orient our UI Frame
+	compact:SetSize(96, 46)
+	compact:SetPoint("CENTER", UIParent )
+	compact:SetMovable(true)
+	compact:EnableMouse(true)
+	compact:SetClampedToScreen( true )
+	compact:RegisterForDrag("LeftButton")
+	compact:SetUserPlaced(true)
+	compact:SetScript("OnDragStart", frame.StartMoving)
+	compact:SetScript("OnDragStop", frame.StopMovingOrSizing)
+	compact:Hide()
+	
+	compact.bg_texture = ui:CreateSpellTexture( compact, { "TOPLEFT", compact, "TOPLEFT", 0, 0 }, 96, 46, RenewingMistTracker:GetSpellID( "Renewing Mist" ) )
+	compact.bg_texture:SetDrawLayer("BACKGROUND")
+	compact.bg_texture:SetVertexColor( 0.25, 0.25, 0.25)
+	
+	-- ReM Count
+	local text = compact:CreateFontString(nil, "OVERLAY")
+	text:SetPoint("CENTER", compact, "CENTER", -24, 10)
+	text:SetFont("Fonts\\FRIZQT__.TTF", 20, "OUTLINE")
+	text:SetJustifyH("CENTER")
+	text:SetShadowOffset(1, -1)
+	text:SetTextColor(0, 1, 0)
+	-- Initialize the text with an empty string
+	text:SetText( "" )
+	compact.rem_count_text = text
+	
+	-- ReM Time
+	local text = compact:CreateFontString(nil, "OVERLAY")
+	text:SetPoint("CENTER", compact, "CENTER", -24, -10)
+	text:SetFont("Fonts\\FRIZQT__.TTF", 12, "OUTLINE")
+	text:SetJustifyH("LEFT")
+	text:SetShadowOffset(1, -1)
+	text:SetTextColor(0, 1, 0)
+	-- Initialize the text with an empty string
+	text:SetText( "" )
+	compact.rem_time_text = text
+	
+	-- Lowest HP
+	local text = compact:CreateFontString(nil, "OVERLAY")
+	text:SetPoint("CENTER", compact, "CENTER", 28, 10)
+	text:SetFont("Fonts\\FRIZQT__.TTF", 12, "OUTLINE")
+	text:SetJustifyH("RIGHT")
+	text:SetShadowOffset(1, -1)
+	text:SetTextColor(0, 1, 0)
+	-- Initialize the text with an empty string
+	text:SetText( "" )	
+	compact.lowest_hp_text = text
+	
+	-- Avg HP
+	local text = compact:CreateFontString(nil, "OVERLAY")
+	text:SetPoint("CENTER", compact, "CENTER", 28, -10)
+	text:SetFont("Fonts\\FRIZQT__.TTF", 12, "OUTLINE")
+	text:SetJustifyH("RIGHT")
+	text:SetShadowOffset(1, -1)
+	text:SetTextColor(0, 1, 0)
+	-- Initialize the text with an empty string
+	text:SetText( "" )	
+	compact.avg_hp_text = text
+	
+		
+	local texture = compact:CreateTexture()
+	texture:SetPoint( "CENTER", compact, "CENTER", 4, -10)
+	texture:SetTexture( "Interface\\FriendsFrame\\UI-Toast-ChatInviteIcon" )
+	texture:SetDrawLayer("OVERLAY")
+	texture:SetWidth( 16 )
+	texture:SetHeight( 16 )
+	texture:Hide()
+	compact.avg_hp_icon = texture
+
+	ui.compact_parent_frame = compact
 end
 
 function ui:CreateProgressBar( name, frame )

@@ -77,6 +77,9 @@ end
 function remTracker:updateStatusBars()
 	myData.current_rem_targets = 0
 	myData.targets_under_80pct = 0
+	myData.shortest_duration = 0
+	myData.lowest_hp_pct = 100
+	myData.avg_hp_pct = 100
 	myData.hasRemTarget = false
 
 	-- Clean up our old ordered targets table
@@ -84,20 +87,63 @@ function remTracker:updateStatusBars()
 		table.remove( ordered_rem_targets, 1 )
 	end
 	-- Count our current targets
+	local total_hp_pct = 0
 	for k,v in pairs(remTracker.data.units) do
 		if v[remTracker:GetSpellID( "Renewing Mist" )] and v[remTracker:GetSpellID( "Renewing Mist" )].duration and v[remTracker:GetSpellID( "Renewing Mist" )].duration > 0 and v[remTracker:GetSpellID( "Renewing Mist" )].expiration_time > GetTime() then
 			myData.hasRemTarget = true
 			myData.current_rem_targets = myData.current_rem_targets + 1
-			if v.pct_hp and v.pct_hp < 80 then
-				myData.targets_under_80pct = myData.targets_under_80pct + 1
+			if v.pct_hp then
+				total_hp_pct = total_hp_pct + v.pct_hp
+				if v.pct_hp < myData.lowest_hp_pct then
+					myData.lowest_hp_pct = v.pct_hp
+				end
+				if v.pct_hp < 80 then
+					myData.targets_under_80pct = myData.targets_under_80pct + 1
+				end
 			end
 			table.insert( ordered_rem_targets, v )
 		end
 	end
 
+	myData.avg_hp_pct = ( total_hp_pct / #ordered_rem_targets )
 	-- Sort the ordered rem targets array
 	table.sort( ordered_rem_targets, sort_units_by_rem_time )
+	
+	-- Save our shortest duration, and set it on the comapct frame
+	if ReMTrackerDB.mode == "compact" and #ordered_rem_targets > 0 then
+		remTracker.ui.compact_parent_frame.rem_count_text:SetText( #ordered_rem_targets )
+		local remaining_time = ordered_rem_targets[1][remTracker:GetSpellID( "Renewing Mist" )].expiration_time - GetTime()
+		if remaining_time < 0 then
+			remaining_time = 0
+		end
+		remTracker.ui.compact_parent_frame.rem_time_text:SetText(string.format("%4.1f", remaining_time) .. "s" )
+		myData.shortest_duration = remaining_time
+		
+		if myData.lowest_hp_pct < 50 then
+			remTracker.ui.compact_parent_frame.lowest_hp_text:SetTextColor(1 , 0, 0)
+		else
+			remTracker.ui.compact_parent_frame.lowest_hp_text:SetTextColor(0 , 1, 0)
+		end
+		remTracker.ui.compact_parent_frame.lowest_hp_text:SetText( math.floor( myData.lowest_hp_pct ) .. "%" )
 
+		if myData.avg_hp_pct < 75 then
+			remTracker.ui.compact_parent_frame.avg_hp_text:SetTextColor(1 , 0, 0)
+		else
+			remTracker.ui.compact_parent_frame.avg_hp_text:SetTextColor(0 , 1, 0)
+		end
+		remTracker.ui.compact_parent_frame.avg_hp_text:SetText( math.floor( myData.avg_hp_pct ) .. "%" )
+		
+		remTracker.ui.compact_parent_frame.avg_hp_icon:Show()
+		remTracker.ui.compact_parent_frame.avg_hp_icon:SetDrawLayer("OVERLAY", 7)
+	else
+		remTracker.ui.compact_parent_frame.avg_hp_icon:Hide()
+		remTracker.ui.compact_parent_frame.rem_count_text:SetText( "" )
+		remTracker.ui.compact_parent_frame.rem_time_text:SetText( "" )
+		remTracker.ui.compact_parent_frame.lowest_hp_text:SetText( "" )
+		remTracker.ui.compact_parent_frame.avg_hp_text:SetText( "" )
+	end
+	
+	
 	if #myData.statusBars < myData.current_rem_targets then
 		remTracker:createStatusBars( myData.current_rem_targets - #myData.statusBars)
 	end
@@ -118,8 +164,7 @@ function remTracker:updateStatusBars()
 		myData.statusBars[ status_bar_index ].playerName = v.name
 		myData.statusBars[ status_bar_index ].value:SetText( v.name )
 		local class_color = RAID_CLASS_COLORS[v.class_name]
-		local remaining_time = 0
-		remaining_time = v[remTracker:GetSpellID( "Renewing Mist" )].expiration_time - GetTime()
+		local remaining_time = v[remTracker:GetSpellID( "Renewing Mist" )].expiration_time - GetTime()
 		if remaining_time < 0 then
 			remaining_time = 0
 		end
@@ -381,6 +426,7 @@ function remTracker:RegisterIndicators()
 	
 	--Create the clicks
 	-- ReM
+
 	local renewing_mist_cast = CreateFrame("Button", nil, frame, "SecureActionButtonTemplate")
 	renewing_mist_cast:SetPoint( "TOPLEFT", frame, "TOPLEFT", 0, 35 ) 
 	renewing_mist_cast:SetSize(32, 35)
@@ -404,7 +450,7 @@ function remTracker:RegisterIndicators()
 	mana_tea_cast:SetSize(32, 35)
 	mana_tea_cast:SetAttribute( "type", "spell" )
 	mana_tea_cast:SetAttribute( "spell", remTracker:GetLocalSpellName( "Mana Tea" ) )
-	
+
 	--Setup all of the indicaors to bounce
 	remTracker.ui:Bounce( renewing_mist, 0.75, 7, true_fn )
 	remTracker.ui:Bounce( thunder_focus_tea, 0.75, 7, true_fn )
@@ -493,6 +539,7 @@ function OnEvent(self, event, ...)
 	elseif event == "ADDON_LOADED" and arg1 == "renewing-mist-tracker" then
 		if not remTracker.ui_loaded then
 			remTracker.ui:SetupBaseFrames()
+			remTracker.ui:Hide()
 			remTracker.ui_loaded = true
 
 			if ReMTrackerDB == nil then

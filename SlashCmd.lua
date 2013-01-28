@@ -12,6 +12,8 @@ function SlashCmdList.REMTRACKER(msg, editbox) -- 4.
 		slash_cmd:DisplayHelp()
 	elseif command == "scale" then
 		slash_cmd:ScaleUi( rest )
+	elseif command == "c" or command == "compact" then
+		slash_cmd:ToggleCompact( rest )
 	elseif command == "position" or command == "pos" then
 		slash_cmd:PositionUi( rest )
 	end
@@ -23,6 +25,7 @@ function slash_cmd:DisplayHelp()
 	DEFAULT_CHAT_FRAME:AddMessage( "====================================", 1,1,1 )
 	DEFAULT_CHAT_FRAME:AddMessage( "/rem, /rem info, /rem help - This Menu", 1,1,1 )
 	DEFAULT_CHAT_FRAME:AddMessage( "/rem scale # - Sets the scale of the RemTracker frame", 1,1,1 )
+	DEFAULT_CHAT_FRAME:AddMessage( "/rem compact - Toggles use of the compact frame", 1,1,1 )
 end
 
 function slash_cmd:ScaleUi( rest )
@@ -32,6 +35,10 @@ function slash_cmd:ScaleUi( rest )
 		DEFAULT_CHAT_FRAME:AddMessage( "/rem scale # - Sets the scale of the RemTracker frame", 1,1,1 )
 	end
 	RenewingMistTracker.ui:Scale( value )
+end
+
+function slash_cmd:ToggleCompact( rest )
+	RenewingMistTracker.ui:ToggleCompact()
 end
 
 function slash_cmd:PositionUi( rest )
