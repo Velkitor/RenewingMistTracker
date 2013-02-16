@@ -310,12 +310,9 @@ function remTracker:BlinkFrame( frame, elapsed )
 end
 
 function remTracker:OnUpdate(elapsed)
-	-- If we are not in healing spec hide the frame and exit this function
+	-- If we are not in healing spec exit this function
 	if not remTracker:IsHealingSpec() then
-			remTracker.ui:Hide()
 			return
-	else
-		remTracker.ui:Show()
 	end
 	
 	--Update our mana percentage
@@ -536,6 +533,12 @@ function OnEvent(self, event, ...)
 		end
 		remTracker:playerLogin()
 		remTracker:QueryGlyphs()
+		-- If we are not in healing spec hide the frame and exit this function
+		if not remTracker:IsHealingSpec() then
+				remTracker.ui:Hide()
+		else
+			remTracker.ui:Show()
+		end
 	elseif event == "ADDON_LOADED" and arg1 == "renewing-mist-tracker" then
 		if not remTracker.ui_loaded then
 			remTracker.ui:SetupBaseFrames()
@@ -553,6 +556,12 @@ function OnEvent(self, event, ...)
 		-- The spec number is passed to us, but this reads better.
 		myData.player.spec = GetSpecialization()
 		remTracker:QueryGlyphs()
+		-- If we are not in healing spec hide the frame and exit this function
+		if not remTracker:IsHealingSpec() then
+				remTracker.ui:Hide()
+		else
+			remTracker.ui:Show()
+		end
   end
 end
 
