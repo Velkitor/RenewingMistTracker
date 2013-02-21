@@ -71,7 +71,11 @@ local sort_units_by_rem_time = function( a, b )
 	-- else if not b or not b["Renewing Mist"] or not b["Renewing Mist"].expiration_time then
 	-- 	return true
 	-- end
-	return a[remTracker:GetSpellID( "Renewing Mist" )].expiration_time < b[remTracker:GetSpellID( "Renewing Mist" )].expiration_time
+	if ReMTrackerDB and ReMTrackerDB.sort and ReMTrackerDB.sort == 'desc' then
+		return a[remTracker:GetSpellID( "Renewing Mist" )].expiration_time > b[remTracker:GetSpellID( "Renewing Mist" )].expiration_time
+	else
+		return a[remTracker:GetSpellID( "Renewing Mist" )].expiration_time < b[remTracker:GetSpellID( "Renewing Mist" )].expiration_time
+	end
 end
 
 function remTracker:updateStatusBars()

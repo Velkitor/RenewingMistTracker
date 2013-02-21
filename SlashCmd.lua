@@ -16,6 +16,8 @@ function SlashCmdList.REMTRACKER(msg, editbox) -- 4.
 		slash_cmd:ToggleCompact( rest )
 	elseif command == "position" or command == "pos" then
 		slash_cmd:PositionUi( rest )
+	elseif command == "order" or command == "o" then
+		slash_cmd:SetOrder( rest )
 	end
 	
 end
@@ -46,4 +48,15 @@ function slash_cmd:PositionUi( rest )
 	local x = tonumber( x_str ) or 1
 	local y = tonumber( y_str ) or 1
 	RenewingMistTracker.ui:SetPosition( x, y )
+end
+
+function slash_cmd:SetOrder( rest )
+	local order, rest = rest:match("^(%S*)%s*(.-)$");
+	if ReMTrackerDB then
+		if order == "ascending" or order == "asc" then
+			ReMTrackerDB.sort = 'asc'
+		else
+			ReMTrackerDB.sort = 'desc'
+		end
+	end
 end
