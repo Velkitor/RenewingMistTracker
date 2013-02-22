@@ -191,6 +191,9 @@ function remTracker:updateStatusBars()
 		else
 			myData.statusBars[ status_bar_index ].health_pct:SetText( "0.00%" )
 		end
+		if ReMTrackerDB and ReMTrackerDB.hide_health_pct then
+			myData.statusBars[ status_bar_index ].health_pct:SetText( "" )
+		end
 		
 		if v[remTracker:GetSpellID( "Renewing Mist" )].last_heal then
 			if v[remTracker:GetSpellID( "Renewing Mist" )].last_heal.at > GetTime() - 1.2 then
