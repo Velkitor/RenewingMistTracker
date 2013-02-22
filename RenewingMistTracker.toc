@@ -2,10 +2,7 @@
 ## Title: Renewing Mist Tracker
 ## SavedVariablesPerCharacter: ReMTrackerDB
 ## Author: Xpres
-## Version: 1.07.03
-## X-Curse-Packaged-Version: 1.07.03
-## X-Curse-Project-Name: Renewing Mist Tracker
-## X-Curse-Project-ID: renewing-mist-tracker
+## Version: @project-version@
 
 embeds.xml
 
