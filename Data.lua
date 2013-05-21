@@ -11,9 +11,6 @@ function Data:LoadUnitInfo( unit_id )
 	if not guid then
 		return nil
 	end
-	if Data.units[ guid ] and Data.units[ guid ].name ~= "Unknown" then
-		return Data.units[ guid ]
-	end
 	-- If we had data just update it
 	local unit_info = Data.units[ guid ] or {}
 	unit_info.guid = guid
