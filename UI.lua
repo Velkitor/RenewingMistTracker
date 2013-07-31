@@ -287,7 +287,7 @@ function ui:SetCooldownGrow( obj )
 		local start, duration, enable = GetSpellCooldown(obj.spell_name)
 
 		-- If we have a duration it is on cooldown.
-		if duration > 1.0 then
+		if duration and duration > 1.0 then
 			local remaining_time = start + duration - GetTime()
 			local pct_done = 1.0 - remaining_time / duration
 			return pct_done
