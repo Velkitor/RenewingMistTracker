@@ -17,10 +17,7 @@ function ui:Hide()
 end
 
 function ui:Show()
-	if not ReMTrackerDB.mode then
-		ReMTrackerDB.mode = "standard"
-	end
-	if ReMTrackerDB.mode == "compact" then
+	if ReMTrackerDB and ReMTrackerDB.mode == "compact" then
 		if ui.compact_parent_frame then
 			ui.compact_parent_frame:Show()
 		end
@@ -94,7 +91,7 @@ function ui:SetupBaseFrames(  )
 	frame.titleText:SetText( "Renewing Mist Tracker" )
 	
 	-- Create the lock button
-	frame.dragLock = CreateFrame("Button", nil, frame)
+	if frame.dragLock = CreateFrame("Button", nil, frame)
 	frame.dragLock:SetPoint("RIGHT", frame, "RIGHT", -3, 0)
 	frame.dragLock:SetWidth(16)
 	frame.dragLock:SetHeight(16)
