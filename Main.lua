@@ -114,7 +114,7 @@ function remTracker:updateStatusBars()
 	table.sort( ordered_rem_targets, sort_units_by_rem_time )
 	
 	-- Save our shortest duration, and set it on the comapct frame
-	if ReMTrackerDB.mode == "compact" and #ordered_rem_targets > 0 then
+	if ReMTrackerDB and ReMTrackerDB.mode == "compact" and #ordered_rem_targets > 0 then
 		remTracker.ui.compact_parent_frame.rem_count_text:SetText( #ordered_rem_targets )
 		local remaining_time = ordered_rem_targets[1][remTracker:GetSpellID( "Renewing Mist" )].expiration_time - GetTime()
 		if remaining_time < 0 then

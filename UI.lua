@@ -91,7 +91,7 @@ function ui:SetupBaseFrames(  )
 	frame.titleText:SetText( "Renewing Mist Tracker" )
 	
 	-- Create the lock button
-	if frame.dragLock = CreateFrame("Button", nil, frame)
+	frame.dragLock = CreateFrame("Button", nil, frame)
 	frame.dragLock:SetPoint("RIGHT", frame, "RIGHT", -3, 0)
 	frame.dragLock:SetWidth(16)
 	frame.dragLock:SetHeight(16)
