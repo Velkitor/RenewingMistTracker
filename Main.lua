@@ -4,7 +4,7 @@ remTracker.SpellIDs = {
 	["Renewing Mist"] = {id = 119611},
 	["Thunder Focus Tea"] = {id =116680},
 	["Uplift"] = {id =116670},
-	["Mana Tea"] = {id =123761} 
+	["Mana Tea"] = {id =123761}
 }
 
 function remTracker:GetLocalSpellNameFromID( id )
@@ -43,12 +43,6 @@ function remTracker:GetLocalSpellName( spell_name )
 	return remTracker.SpellIDs[ spell_name ].name
 end
 local myFrame = CreateFrame("frame", "RenewingMistTracker")
-
---Register Events
-myFrame:RegisterEvent("PLAYER_LOGIN")
-myFrame:RegisterEvent("ADDON_LOADED")
-myFrame:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
-myFrame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 
 local myData = {
 	player={},
@@ -112,7 +106,7 @@ function remTracker:updateStatusBars()
 	myData.avg_hp_pct = ( total_hp_pct / #ordered_rem_targets )
 	-- Sort the ordered rem targets array
 	table.sort( ordered_rem_targets, sort_units_by_rem_time )
-	
+
 	-- Save our shortest duration, and set it on the comapct frame
 	if ReMTrackerDB and ReMTrackerDB.mode == "compact" and #ordered_rem_targets > 0 then
 		remTracker.ui.compact_parent_frame.rem_count_text:SetText( #ordered_rem_targets )
@@ -122,7 +116,7 @@ function remTracker:updateStatusBars()
 		end
 		remTracker.ui.compact_parent_frame.rem_time_text:SetText(string.format("%4.1f", remaining_time) .. "s" )
 		myData.shortest_duration = remaining_time
-		
+
 		if myData.lowest_hp_pct < 50 then
 			remTracker.ui.compact_parent_frame.lowest_hp_text:SetTextColor(1 , 0, 0)
 		else
@@ -136,7 +130,7 @@ function remTracker:updateStatusBars()
 			remTracker.ui.compact_parent_frame.avg_hp_text:SetTextColor(0 , 1, 0)
 		end
 		remTracker.ui.compact_parent_frame.avg_hp_text:SetText( math.floor( myData.avg_hp_pct ) .. "%" )
-		
+
 		remTracker.ui.compact_parent_frame.avg_hp_icon:Show()
 		remTracker.ui.compact_parent_frame.avg_hp_icon:SetDrawLayer("OVERLAY", 7)
 	else
@@ -146,8 +140,8 @@ function remTracker:updateStatusBars()
 		remTracker.ui.compact_parent_frame.lowest_hp_text:SetText( "" )
 		remTracker.ui.compact_parent_frame.avg_hp_text:SetText( "" )
 	end
-	
-	
+
+
 	if #myData.statusBars < myData.current_rem_targets then
 		remTracker:createStatusBars( myData.current_rem_targets - #myData.statusBars)
 	end
@@ -159,7 +153,7 @@ function remTracker:updateStatusBars()
 			myData.statusBars[i]:Hide()
 		end
 	end
-	
+
 	-- Add new renewing mist targets
 	local status_bar_index = 1
 	for k,v in ipairs(ordered_rem_targets) do
@@ -194,7 +188,7 @@ function remTracker:updateStatusBars()
 		if ReMTrackerDB and ReMTrackerDB.hide_health_pct then
 			myData.statusBars[ status_bar_index ].health_pct:SetText( "" )
 		end
-		
+
 		if v[remTracker:GetSpellID( "Renewing Mist" )].last_heal then
 			if v[remTracker:GetSpellID( "Renewing Mist" )].last_heal.at > GetTime() - 1.2 then
 				local heal_string = Helpers:ReadableNumber(v[remTracker:GetSpellID( "Renewing Mist" )].last_heal.effective, 2) .. " ( O: ".. Helpers:ReadableNumber(v[remTracker:GetSpellID( "Renewing Mist" )].last_heal.over, 2) .. " )"
@@ -241,7 +235,7 @@ function remTracker:createStatusBars( cnt )
 		bar.value:SetTextColor(0, 1, 0)
 		-- Initialize the text with an empty string
 		bar.value:SetText( "" )
-		
+
 		-- Do we have the player name for this bar?
 		bar.value2 = bar:CreateFontString(nil, "OVERLAY")
 		bar.value2:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 4, 0)
@@ -251,7 +245,7 @@ function remTracker:createStatusBars( cnt )
 		bar.value2:SetTextColor(0, 1, 0)
 		-- Initialize the text with an empty string
 		bar.value2:SetText( "" )
-		
+
 		bar.health_pct = bar:CreateFontString(nil, "OVERLAY")
 		bar.health_pct:SetPoint("RIGHT", bar, "RIGHT", 4, 0)
 		bar.health_pct:SetFont("Fonts\\FRIZQT__.TTF", 14, "OUTLINE")
@@ -260,7 +254,7 @@ function remTracker:createStatusBars( cnt )
 		bar.health_pct:SetTextColor(1, 0, 0)
 		-- Initialize the text with an empty string
 		bar.health_pct:SetText( "" )
-		
+
 		bar.heal_amt = bar:CreateFontString(nil, "OVERLAY")
 		bar.heal_amt:SetPoint("BOTTOM", bar, "BOTTOM", 0, 0)
 		bar.heal_amt:SetFont("Fonts\\FRIZQT__.TTF", 12, "OUTLINE")
@@ -269,7 +263,7 @@ function remTracker:createStatusBars( cnt )
 		bar.heal_amt:SetTextColor(0, 1, 0, 0)
 		-- Initialize the text with an empty string
 		bar.heal_amt:SetText( "" )
-		
+
 		-- Hide it so that we don't show empty bars.
 		bar:Hide()
 		-- Save it to our status bars table
@@ -286,9 +280,9 @@ function remTracker:playerLogin()
 	myData.player.spec = GetSpecialization()
 	-- Add ourselves to the database of seen players
 	remTracker:CacheUserInfoForUnitID( "PLAYER" )
-	
+
 	remTracker:RegisterIndicators()
-	
+
 	DEFAULT_CHAT_FRAME:AddMessage( "Renewing Mist Tracker Loaded", 0.5, 1, 0.831 )
 end
 
@@ -309,7 +303,7 @@ function remTracker:BlinkFrame( frame, elapsed )
 		frame.blinkAanimationTime = animation_time
 		-- Make sure the icon is visable if it is not on cooldown.
 		local animation_step = math.sin( (math.fmod( animation_time, 1.5 ) / 1.5 ) * math.pi )
-	
+
 		frame:SetVertexColor(1, 1, animation_step);
 	else
 		frame:SetVertexColor(1, 1, 1);
@@ -321,11 +315,11 @@ function remTracker:OnUpdate(elapsed)
 	if not remTracker:IsHealingSpec() then
 			return
 	end
-	
+
 	--Update our mana percentage
 	local mana = UnitPower("PLAYER", SPELL_POWER_MANA)
 	local max_mana = UnitPowerMax("Player",SPELL_POWER_MANA)
-	
+
 	if not max_mana or max_mana < 1 or not mana or mana < 1 then
 		myData.player.mana_pct = 0
 	else
@@ -342,7 +336,7 @@ function remTracker:OnUpdate(elapsed)
 	-- Check self
 	remTracker.data:QuerySpellInfoForUnit( remTracker:GetSpellID( "Renewing Mist" ), "PLAYER" )
 	remTracker.data:UpdateUnitHealth( "PLAYER" )
-	
+
 	if members then
 		for i = 1, members, 1 do
 			local unit_id = grp_type .. i
@@ -352,7 +346,7 @@ function remTracker:OnUpdate(elapsed)
 		end
 	end
 	remTracker:updateStatusBars()
-	
+
 	remTracker.ui:Animate( elapsed )
 end
 
@@ -390,7 +384,7 @@ function remTracker:HasGlyph( spell_id )
 	return false
 end
 
---This will look nice in the code than remTracker:HasGlyph( 123763 ) 
+--This will look nice in the code than remTracker:HasGlyph( 123763 )
 
 function remTracker:HasManaTeaGlyph()
 	return remTracker:HasGlyph( 123763 )
@@ -421,36 +415,36 @@ end
 function remTracker:RegisterIndicators()
 	local true_fn = function() return true end
 	local frame = remTracker.ui.parent_frame
-	
+
 	-- Create the texture
 	local renewing_mist = remTracker.ui:CreateSpellTexture( frame, { "TOPLEFT", frame, "TOPLEFT", 0, 32 }, 32, 32, remTracker:GetSpellID( "Renewing Mist" ) )
 	local thunder_focus_tea = remTracker.ui:CreateSpellTexture( frame, { "TOPLEFT", frame, "TOPLEFT", 34, 32 }, 32, 32, remTracker:GetSpellID( "Thunder Focus Tea" ) )
 	local uplift = remTracker.ui:CreateSpellTexture( frame, { "TOPLEFT", frame, "TOPLEFT", 68, 32 }, 32, 32, remTracker:GetSpellID( "Uplift" ) )
 	local mana_tea = remTracker.ui:CreateSpellTexture( frame, { "TOPLEFT", frame, "TOPLEFT", 170, 32 }, 32, 32, remTracker:GetSpellID( "Mana Tea" ) )
-	
+
 	--Create the clicks
 	-- ReM
 
 	local renewing_mist_cast = CreateFrame("Button", nil, frame, "SecureActionButtonTemplate")
-	renewing_mist_cast:SetPoint( "TOPLEFT", frame, "TOPLEFT", 0, 35 ) 
+	renewing_mist_cast:SetPoint( "TOPLEFT", frame, "TOPLEFT", 0, 35 )
 	renewing_mist_cast:SetSize(32, 35)
 	renewing_mist_cast:SetAttribute( "type", "spell" )
 	renewing_mist_cast:SetAttribute( "spell", remTracker:GetLocalSpellName( "Renewing Mist" ) )
 	--TFT
 	local thunder_focus_tea_cast = CreateFrame("Button", nil, frame, "SecureActionButtonTemplate")
-	thunder_focus_tea_cast:SetPoint( "TOPLEFT", frame, "TOPLEFT", 34, 35 ) 
+	thunder_focus_tea_cast:SetPoint( "TOPLEFT", frame, "TOPLEFT", 34, 35 )
 	thunder_focus_tea_cast:SetSize(32, 35)
 	thunder_focus_tea_cast:SetAttribute( "type", "spell" )
 	thunder_focus_tea_cast:SetAttribute( "spell", remTracker:GetLocalSpellName( "Thunder Focus Tea" ) )
-	
+
 	local uplift_cast = CreateFrame("Button", nil, frame, "SecureActionButtonTemplate")
-	uplift_cast:SetPoint( "TOPLEFT", frame, "TOPLEFT", 68, 35 ) 
+	uplift_cast:SetPoint( "TOPLEFT", frame, "TOPLEFT", 68, 35 )
 	uplift_cast:SetSize(32, 35)
 	uplift_cast:SetAttribute( "type", "spell" )
 	uplift_cast:SetAttribute( "spell", remTracker:GetLocalSpellName( "Uplift" ) )
-	
+
 	local mana_tea_cast = CreateFrame("Button", nil, frame, "SecureActionButtonTemplate")
-	mana_tea_cast:SetPoint( "TOPLEFT", frame, "TOPLEFT", 170, 35 ) 
+	mana_tea_cast:SetPoint( "TOPLEFT", frame, "TOPLEFT", 170, 35 )
 	mana_tea_cast:SetSize(32, 35)
 	mana_tea_cast:SetAttribute( "type", "spell" )
 	mana_tea_cast:SetAttribute( "spell", remTracker:GetLocalSpellName( "Mana Tea" ) )
@@ -460,12 +454,12 @@ function remTracker:RegisterIndicators()
 	remTracker.ui:Bounce( thunder_focus_tea, 0.75, 7, true_fn )
 	remTracker.ui:Bounce( uplift, 0.75, 7, true_fn )
 	remTracker.ui:Bounce( mana_tea, 0.75, 7, true_fn )
-	
+
 	-- Save the protected frames to the ui table
 	if not remTracker.ui.protected_frames then
 		remTracker.ui.protected_frames = {}
 	end
-	
+
 	remTracker.ui.protected_frames.renewing_mist_cast = renewing_mist_cast
 	remTracker.ui.protected_frames.thunder_focus_tea_cast = thunder_focus_tea_cast
 	remTracker.ui.protected_frames.uplift_cast = uplift_cast
@@ -474,7 +468,7 @@ function remTracker:RegisterIndicators()
 	remTracker.ui:SetCooldownGrow( renewing_mist  )
 	remTracker.ui:SetCooldownGrow( thunder_focus_tea  )
 	remTracker.ui:SetCooldownGrow( mana_tea  )
-	
+
 	--Set up the blink for our indicators
 	local thunder_focus_tea_blink = function()
 			if myData.current_rem_targets > 5 then
@@ -484,7 +478,7 @@ function remTracker:RegisterIndicators()
 			end
 	end
 	remTracker.ui:Blink( thunder_focus_tea, 1.5, thunder_focus_tea_blink )
-	
+
 	local uplift_blink = function()
 		if myData.targets_under_80pct > 2 then
 			return true
@@ -493,7 +487,7 @@ function remTracker:RegisterIndicators()
 		end
 	end
 	remTracker.ui:Blink( uplift, 1.5, uplift_blink )
-	
+
 	local mana_tea_blink = function()
 		if not myData.player.mana_pct or myData.player.mana_pct > 50 then
 			return false
@@ -502,7 +496,7 @@ function remTracker:RegisterIndicators()
 		end
 	end
 	remTracker.ui:Blink( mana_tea, 1.5, mana_tea_blink )
-	
+
 	-- Set up when to hide
 	local uplift_should_hide = function()
 		return myData.hasRemTarget == false
@@ -572,8 +566,15 @@ function OnEvent(self, event, ...)
   end
 end
 
-myFrame:SetScript("OnEvent", OnEvent)
-
+local localizedClass, englishClass = UnitClass("player")
+if englishClass == "MONK" then
+  --Register Events
+  myFrame:RegisterEvent("PLAYER_LOGIN")
+  myFrame:RegisterEvent("ADDON_LOADED")
+  myFrame:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
+  myFrame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+  myFrame:SetScript("OnEvent", OnEvent)
+end
 -- Helper functions
 
 function Helpers:ReadableNumber(num, places)
@@ -594,4 +595,3 @@ function Helpers:ReadableNumber(num, places)
     end
     return ret
 end
-
