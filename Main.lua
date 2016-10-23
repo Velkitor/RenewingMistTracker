@@ -2,9 +2,7 @@ _G.RenewingMistTracker = {}
 local remTracker = _G.RenewingMistTracker
 remTracker.SpellIDs = {
 	["Renewing Mist"] = {id = 119611},
-	["Thunder Focus Tea"] = {id =116680},
-	["Uplift"] = {id =116670},
-	["Mana Tea"] = {id =123761}
+	["Thunder Focus Tea"] = {id =116680}
 }
 
 function remTracker:GetLocalSpellNameFromID( id )
@@ -354,41 +352,8 @@ function remTracker:IsHealingSpec()
 	return ( myData.player.spec == 2 )
 end
 
-function remTracker:QueryGlyphs()
-	local glyphs = {}
-	for i = 1, 6, 1 do
-		local glyph_data = {}
-		local enabled, glyphType, glyphTooltipIndex, glyphSpell, icon = GetGlyphSocketInfo(i)
-		glyph_data.enabled = enabled
-		glyph_data.glyph_type = glyphType
-		glyph_data.tooltip_index = glyphTooltipIndex
-		glyph_data.icon = icon
-		glyph_data.spell_id = glyphSpell
-		table.insert( glyphs, glyph_data )
-	end
-	myData.player.glyphs = glyphs
-end
 
-function remTracker:HasGlyph( spell_id )
-	if not myData.player.glyphs then
-		return false
-	end
-	if #myData.player.glyphs < 1 then
-		return false
-	end
-	for k,v in pairs(myData.player.glyphs) do
-		if v.spell_id and v.spell_id == spell_id then
-			return true
-		end
-	end
-	return false
-end
 
---This will look nice in the code than remTracker:HasGlyph( 123763 )
-
-function remTracker:HasManaTeaGlyph()
-	return remTracker:HasGlyph( 123763 )
-end
 
 function remTracker:CacheUserInfoForUnitID( unit_id )
 end
@@ -419,8 +384,6 @@ function remTracker:RegisterIndicators()
 	-- Create the texture
 	local renewing_mist = remTracker.ui:CreateSpellTexture( frame, { "TOPLEFT", frame, "TOPLEFT", 0, 32 }, 32, 32, remTracker:GetSpellID( "Renewing Mist" ) )
 	local thunder_focus_tea = remTracker.ui:CreateSpellTexture( frame, { "TOPLEFT", frame, "TOPLEFT", 34, 32 }, 32, 32, remTracker:GetSpellID( "Thunder Focus Tea" ) )
-	local uplift = remTracker.ui:CreateSpellTexture( frame, { "TOPLEFT", frame, "TOPLEFT", 68, 32 }, 32, 32, remTracker:GetSpellID( "Uplift" ) )
-	local mana_tea = remTracker.ui:CreateSpellTexture( frame, { "TOPLEFT", frame, "TOPLEFT", 170, 32 }, 32, 32, remTracker:GetSpellID( "Mana Tea" ) )
 
 	--Create the clicks
 	-- ReM
@@ -437,23 +400,9 @@ function remTracker:RegisterIndicators()
 	thunder_focus_tea_cast:SetAttribute( "type", "spell" )
 	thunder_focus_tea_cast:SetAttribute( "spell", remTracker:GetLocalSpellName( "Thunder Focus Tea" ) )
 
-	local uplift_cast = CreateFrame("Button", nil, frame, "SecureActionButtonTemplate")
-	uplift_cast:SetPoint( "TOPLEFT", frame, "TOPLEFT", 68, 35 )
-	uplift_cast:SetSize(32, 35)
-	uplift_cast:SetAttribute( "type", "spell" )
-	uplift_cast:SetAttribute( "spell", remTracker:GetLocalSpellName( "Uplift" ) )
-
-	local mana_tea_cast = CreateFrame("Button", nil, frame, "SecureActionButtonTemplate")
-	mana_tea_cast:SetPoint( "TOPLEFT", frame, "TOPLEFT", 170, 35 )
-	mana_tea_cast:SetSize(32, 35)
-	mana_tea_cast:SetAttribute( "type", "spell" )
-	mana_tea_cast:SetAttribute( "spell", remTracker:GetLocalSpellName( "Mana Tea" ) )
-
 	--Setup all of the indicaors to bounce
 	remTracker.ui:Bounce( renewing_mist, 0.75, 7, true_fn )
 	remTracker.ui:Bounce( thunder_focus_tea, 0.75, 7, true_fn )
-	remTracker.ui:Bounce( uplift, 0.75, 7, true_fn )
-	remTracker.ui:Bounce( mana_tea, 0.75, 7, true_fn )
 
 	-- Save the protected frames to the ui table
 	if not remTracker.ui.protected_frames then
@@ -462,12 +411,10 @@ function remTracker:RegisterIndicators()
 
 	remTracker.ui.protected_frames.renewing_mist_cast = renewing_mist_cast
 	remTracker.ui.protected_frames.thunder_focus_tea_cast = thunder_focus_tea_cast
-	remTracker.ui.protected_frames.uplift_cast = uplift_cast
-	remTracker.ui.protected_frames.mana_tea_cast = mana_tea_cast
+
 	--Set up the grow for cooldowns
 	remTracker.ui:SetCooldownGrow( renewing_mist  )
 	remTracker.ui:SetCooldownGrow( thunder_focus_tea  )
-	remTracker.ui:SetCooldownGrow( mana_tea  )
 
 	--Set up the blink for our indicators
 	local thunder_focus_tea_blink = function()
@@ -479,46 +426,6 @@ function remTracker:RegisterIndicators()
 	end
 	remTracker.ui:Blink( thunder_focus_tea, 1.5, thunder_focus_tea_blink )
 
-	local uplift_blink = function()
-		if myData.targets_under_80pct > 2 then
-			return true
-		else
-			return false
-		end
-	end
-	remTracker.ui:Blink( uplift, 1.5, uplift_blink )
-
-	local mana_tea_blink = function()
-		if not myData.player.mana_pct or myData.player.mana_pct > 50 then
-			return false
-		else
-			return true
-		end
-	end
-	remTracker.ui:Blink( mana_tea, 1.5, mana_tea_blink )
-
-	-- Set up when to hide
-	local uplift_should_hide = function()
-		return myData.hasRemTarget == false
-	end
-	remTracker.ui:ShouldHide( uplift, uplift_should_hide )
-	local mana_tea_hide = function()
-		if not myData.player.mana_pct or myData.player.mana_pct > 90 then
-			return true
-		end
-		if not remTracker:HasManaTeaGlyph() then
-			return true
-		end
-		local name, rank, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId, canApplyAura, isBossDebuff, value1, value2, value3 = UnitBuff("PLAYER", remTracker:GetLocalSpellName( "Mana Tea" ), nil, "PLAYER")
-		if not count then
-			return true
-		end
-		if count > 1 then
-			return false
-		end
-		return true
-	end
-	remTracker.ui:ShouldHide( mana_tea, mana_tea_hide )
 end
 
 function OnEvent(self, event, ...)
@@ -533,7 +440,6 @@ function OnEvent(self, event, ...)
 			return
 		end
 		remTracker:playerLogin()
-		remTracker:QueryGlyphs()
 		-- If we are not in healing spec hide the frame and exit this function
 		if not remTracker:IsHealingSpec() then
 				remTracker.ui:Hide()
@@ -556,7 +462,7 @@ function OnEvent(self, event, ...)
 	elseif event == "ACTIVE_TALENT_GROUP_CHANGED" then
 		-- The spec number is passed to us, but this reads better.
 		myData.player.spec = GetSpecialization()
-		remTracker:QueryGlyphs()
+
 		-- If we are not in healing spec hide the frame and exit this function
 		if not remTracker:IsHealingSpec() then
 				remTracker.ui:Hide()
