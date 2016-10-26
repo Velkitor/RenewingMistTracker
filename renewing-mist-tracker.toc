@@ -1,7 +1,7 @@
-## Interface: 70000
+## Interface: 70100
 ## Title: Renewing Mist Tracker
 ## SavedVariablesPerCharacter: ReMTrackerDB
-## Author: Xpres
+## Author: Expres
 ## Version: @project-version@
 
 embeds.xml
